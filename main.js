@@ -32,8 +32,9 @@ let userData = {
         gachaCount: 0,
         enemyCount: 0
     },
-    stamps: [], // 新しいスタンプデータ
     calendar: {}, // 新しいカレンダーデータ
+    treasureBoxCount: 0, // 今日の宝箱を開けた回数
+    lastLoginDate: '' // 最後にログインした日付
 };
 
 // スキルマスタデータ
@@ -139,8 +140,19 @@ function setupFirestoreListener() {
     onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             userData = docSnap.data();
+            // 日付が変わったら宝箱の回数をリセット
+            const today = new Date().toISOString().split('T')[0];
+            if (userData.lastLoginDate !== today) {
+                userData.treasureBoxCount = 0;
+                userData.lastLoginDate = today;
+                updateFirestore({
+                    treasureBoxCount: 0,
+                    lastLoginDate: today
+                });
+            }
         } else {
-            setDoc(docRef, userData);
+            const today = new Date().toISOString().split('T')[0];
+            setDoc(docRef, { ...userData, lastLoginDate: today });
         }
         updateUI();
     });
@@ -197,6 +209,7 @@ const updateUI = () => {
     document.getElementById('user-gold').textContent = userData.gold;
     document.getElementById('player-level').textContent = userData.playerStats.level;
     document.getElementById('enemy-count').textContent = userData.playerStats.enemyCount;
+    document.getElementById('treasure-box-count').textContent = 5 - userData.treasureBoxCount;
     renderStatusScreen();
     renderItemInventory();
     renderCalendar();
@@ -522,22 +535,24 @@ const renderCalendar = () => {
 
     for (let i = 1; i <= daysInMonth; i++) {
         const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        const isStamped = userData.calendar[dateString] === true;
+        const studyContent = userData.calendar[dateString] || [];
         
         const cell = document.createElement('div');
-        cell.className = `w-10 h-10 border rounded-lg flex items-center justify-center relative ${isStamped ? 'bg-yellow-300' : 'bg-gray-100'} ${dateString === todayString ? 'border-2 border-yellow-500' : ''}`;
+        cell.className = `w-10 h-10 border rounded-lg flex flex-col items-center justify-center relative text-xs p-1 ${studyContent.length > 0 ? 'bg-yellow-300' : 'bg-gray-100'} ${dateString === todayString ? 'border-2 border-yellow-500' : ''}`;
         cell.textContent = i;
         calendarGrid.appendChild(cell);
 
-        if (isStamped) {
-            const stamp = document.createElement('span');
-            stamp.textContent = '✔️';
-            stamp.className = 'absolute bottom-1 right-1 text-sm';
-            cell.appendChild(stamp);
+        if (studyContent.length > 0) {
+            const contentIndicator = document.createElement('span');
+            contentIndicator.textContent = '✏️';
+            contentIndicator.className = 'absolute bottom-1 right-1 text-sm';
+            cell.appendChild(contentIndicator);
+            
+            // ツールチップ表示機能 (ここでは仮の表示)
+            cell.title = studyContent.join('\n');
         }
     }
 };
-
 
 // タブ切り替え
 const switchTab = (tabId) => {
@@ -552,11 +567,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initApp();
 
     document.getElementById('gacha-tab').addEventListener('click', () => switchTab('gacha-content'));
-    document.getElementById('character-tab').addEventListener('click', () => switchTab('character-content'));
-    document.getElementById('stamp-tab').addEventListener('click', () => switchTab('stamp-content'));
     
-    document.getElementById('add-gold-btn').addEventListener('click', async () => {
-        await updateFirestore({ gold: userData.gold + 300 });
+    document.getElementById('character-tab').addEventListener('click', () => {
+        switchTab('character-content');
+        renderStatusScreen();
+        renderItemInventory();
+    });
+
+    document.getElementById('stamp-tab').addEventListener('click', () => {
+        switchTab('stamp-content');
+        renderCalendar();
     });
     
     document.getElementById('add-enemy-btn').addEventListener('click', async () => {
@@ -570,40 +590,59 @@ document.addEventListener('DOMContentLoaded', () => {
         await addExp(2); // 敵を倒すと経験値2を獲得
     });
 
-    document.getElementById('stamp-btn').addEventListener('click', async () => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const todayString = `${year}-${month}-${day}`;
-        
-        if (!userData.calendar[todayString]) {
-            await updateFirestore({
-                calendar: {
-                    ...userData.calendar,
-                    [todayString]: true
-                },
-                gold: userData.gold + 100 // スタンプボーナス
-            });
-            // ユーザーにスタンプボーナスを知らせる
+    document.getElementById('open-treasure-box-btn').addEventListener('click', async () => {
+        if (userData.treasureBoxCount >= 5) {
             const modal = document.getElementById('result-modal');
             modal.style.display = 'flex';
-            document.getElementById('result-title').textContent = 'スタンプボーナス！';
-            document.getElementById('result-name').textContent = '今日のスタンプをゲットしました！';
-            document.getElementById('result-rarity').textContent = '+100G';
-            document.getElementById('result-image').src = 'https://placehold.co/128x128/f0fff0/1e40af?text=✔️';
-            document.getElementById('result-stats').textContent = '';
-            document.getElementById('result-skills').innerHTML = '';
-        } else {
-            const modal = document.getElementById('result-modal');
-            modal.style.display = 'flex';
-            document.getElementById('result-title').textContent = 'スタンプ済み';
-            document.getElementById('result-name').textContent = '今日はすでにスタンプを押しました。';
+            document.getElementById('result-title').textContent = '宝箱は空です';
+            document.getElementById('result-name').textContent = '今日の分はもうありません';
             document.getElementById('result-rarity').textContent = '';
-            document.getElementById('result-image').src = 'https://placehold.co/128x128/ffbf00/8b4513?text=済';
+            document.getElementById('result-image').src = 'https://placehold.co/128x128/f0f0f0/888?text=EMPTY';
             document.getElementById('result-stats').textContent = '';
             document.getElementById('result-skills').innerHTML = '';
+            return;
         }
+
+        document.getElementById('study-input-modal').style.display = 'flex';
+    });
+    
+    document.getElementById('submit-study-content-btn').addEventListener('click', async () => {
+        const studyContent = document.getElementById('study-content-input').value;
+        if (!studyContent.trim()) {
+            return; // 何も入力されていなければ何もしない
+        }
+        
+        const today = new Date().toISOString().split('T')[0];
+        const newCalendar = { ...userData.calendar };
+        if (!newCalendar[today]) {
+            newCalendar[today] = [];
+        }
+        newCalendar[today].push(studyContent);
+
+        const newTreasureBoxCount = userData.treasureBoxCount + 1;
+        
+        await updateFirestore({
+            gold: userData.gold + 300,
+            calendar: newCalendar,
+            treasureBoxCount: newTreasureBoxCount
+        });
+        
+        document.getElementById('study-input-modal').style.display = 'none';
+        document.getElementById('study-content-input').value = '';
+
+        const modal = document.getElementById('result-modal');
+        modal.style.display = 'flex';
+        document.getElementById('result-title').textContent = '宝箱ゲット！';
+        document.getElementById('result-name').textContent = '300G獲得しました！';
+        document.getElementById('result-rarity').textContent = `今日の宝箱 (残り${5 - newTreasureBoxCount}回)`;
+        document.getElementById('result-image').src = 'https://placehold.co/128x128/ffe4b5/222?text=GET';
+        document.getElementById('result-stats').textContent = '';
+        document.getElementById('result-skills').innerHTML = '';
+    });
+    
+    document.getElementById('close-study-input-modal').addEventListener('click', () => {
+        document.getElementById('study-input-modal').style.display = 'none';
+        document.getElementById('study-content-input').value = '';
     });
 
     document.getElementById('close-modal').addEventListener('click', () => {
