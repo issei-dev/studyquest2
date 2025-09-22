@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyQUEST II</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="main.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+        .draw-button {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            font-weight: bold;
+            border-radius: 9999px;
+            padding: 1rem 2rem;
+            cursor: pointer;
+        }
+        .draw-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .result-image {
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1.125rem;
+            font-weight: bold;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .tab-button.active {
+            background-color: #4facfe;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div id="app" class="container mx-auto p-4 flex flex-col items-center">
+        <h1 class="text-4xl font-bold text-center mb-6 text-gray-800">StudyQUEST II</h1>
+        <div class="mb-4 text-sm text-gray-500">
+            ユーザーID: <span id="user-id">Loading...</span>
+        </div>
+        
+        <div class="flex space-x-4 mb-8">
+            <button id="gacha-tab" class="tab-button bg-gray-300 text-gray-700 active">ガチャ</button>
+            <button id="character-tab" class="tab-button bg-gray-300 text-gray-700">キャラクター</button>
+        </div>
+
+        <div id="gacha-content" class="tab-content w-full">
+            <div class="w-full flex justify-center space-x-4 mb-4">
+                <div class="card p-4 text-center flex-1">
+                    <p class="text-lg font-bold">主人公レベル</p>
+                    <p id="player-level" class="text-2xl mt-1 text-purple-600">0</p>
+                </div>
+                <div class="card p-4 text-center flex-1">
+                    <p class="text-lg font-bold">ガチャ回数</p>
+                    <p id="gacha-count" class="text-2xl mt-1 text-orange-600">0</p>
+                </div>
+            </div>
+
+            <div class="w-full flex justify-center space-x-4 mb-8">
+                <div class="card p-4 text-center w-1/2">
+                    <p class="text-lg font-bold">所持G</p>
+                    <p id="user-gold" class="text-2xl mt-1 text-blue-600">0</p>
+                </div>
+                <div class="card p-4 text-center w-1/2">
+                    <p class="text-lg font-bold">所持アイテム</p>
+                    <p id="item-count" class="text-2xl mt-1 text-green-600">0</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                <div class="card p-6 flex flex-col items-center">
+                    <h2 class="text-2xl font-bold mb-4">武器ガチャ</h2>
+                    <img src="https://placehold.co/128x128/f0f9ff/0369a1?text=UR武器" alt="UR Weapon" class="rounded-lg mb-4">
+                    <p class="text-gray-600 mb-4">武器や防具が排出される</p>
+                    <button class="draw-button w-full" data-cost="500" data-type="weapon">500Gで引く</button>
+                </div>
+
+                <div class="card p-6 flex flex-col items-center">
+                    <h2 class="text-2xl font-bold mb-4">ペットガチャ</h2>
+                    <img src="https://placehold.co/128x128/f0fdf4/16a34a?text=URペット" alt="UR Pet" class="rounded-lg mb-4">
+                    <p class="text-gray-600 mb-4">ペットが排出される</p>
+                    <button class="draw-button w-full" data-cost="500" data-type="pet">500Gで引く</button>
+                </div>
+
+                <div class="card p-6 flex flex-col items-center col-span-1 sm:col-span-2 lg:col-span-1">
+                    <h2 class="text-2xl font-bold mb-4">レアガチャ</h2>
+                    <img src="https://placehold.co/128x128/fff2f2/ef4444?text=URアイテム" alt="UR Item" class="rounded-lg mb-4">
+                    <p class="text-gray-600 mb-4">すべてのアイテムが排出される</p>
+                    <button class="draw-button w-full" data-cost="1500" data-type="rare">1500Gで引く</button>
+                </div>
+            </div>
+
+            <div class="mt-8 flex space-x-4">
+                <button id="add-gold-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors">300G獲得</button>
+                <button id="add-enemy-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors">敵を1体倒す</button>
+            </div>
+        </div>
+
+        <div id="character-content" class="tab-content w-full" style="display: none;">
+            <div id="status-container"></div>
+            
+            <div class="p-6 bg-white rounded-xl shadow-lg mt-6">
+                <h2 class="text-2xl font-bold mb-4">所持アイテム一覧</h2>
+                <div id="inventory-list" class="flex flex-col space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-modal" class="modal">
+        <div class="modal-content text-center">
+            <h3 id="result-title" class="text-xl font-bold mb-4"></h3>
+            <img id="result-image" src="" alt="獲得アイテム" class="result-image mx-auto w-40 h-40 rounded-lg mb-4">
+            <p id="result-name" class="text-lg font-bold mb-1"></p>
+            <p id="result-rarity" class="text-md text-gray-500 mb-2"></p>
+            <p id="result-stats" class="text-sm text-gray-700"></p>
+            <div id="result-skills" class="mt-2 text-sm text-left mx-auto max-w-[200px]"></div>
+            <button id="close-modal" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full mt-4">閉じる</button>
+        </div>
+    </div>
+    
+    <div id="level-up-modal" class="modal">
+        <div class="modal-content text-center">
+            <h3 class="text-3xl font-bold text-yellow-500 mb-4">レベルアップ！</h3>
+            <p id="level-up-message" class="text-xl mb-4"></p>
+            <p class="text-gray-700">ステータスが上昇しました。</p>
+            <button id="close-level-up-modal" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full mt-4">閉じる</button>
+        </div>
+    </div>
+</body>
+</html>
