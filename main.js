@@ -352,6 +352,7 @@ const equipItem = async (itemId) => {
         if (emptySlotIndex !== -1) {
             newEquipped.pets[emptySlotIndex] = itemToEquip;
         } else {
+            // 3枠目が埋まっている場合は、1枠目を上書きする
             newEquipped.pets[0] = itemToEquip;
         }
     } else {
