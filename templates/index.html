@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>スタンプ＆ガチャ</title>
+</head>
+<body>
+    <h1>スタンプ＆ガチャ</h1>
+    <p>今日のガチャ残り回数：{{ remaining_gacha }}回</p>
+    
+    {% if remaining_gacha > 0 %}
+    <form action="/gacha" method="post">
+        <label for="study_content">今日の勉強内容:</label><br>
+        <textarea id="study_content" name="study_content" rows="4" cols="50" required></textarea><br><br>
+        
+        <label for="gacha_type">ガチャ選択:</label>
+        <select id="gacha_type" name="gacha_type">
+            <option value="weapon">ぶきガチャ</option>
+            <option value="pet">ペットガチャ</option>
+        </select><br><br>
+        
+        <input type="submit" value="ガチャを回す">
+    </form>
+    {% else %}
+    <p>今日のガチャはもう回せません。</p>
+    {% endif %}
+
+</body>
+</html>
