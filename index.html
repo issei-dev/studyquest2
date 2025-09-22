@@ -79,6 +79,30 @@
             background-color: #4facfe;
             color: white;
         }
+        .equipment-slot {
+            width: 6rem;
+            height: 6rem;
+            border: 2px dashed #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            position: relative;
+        }
+        .equipment-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .equipment-slot-label {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100%);
+            font-size: 0.75rem;
+            color: #64748b;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
@@ -88,12 +112,15 @@
             ユーザーID: <span id="user-id">Loading...</span>
         </div>
         
+        <!-- タブナビゲーション -->
         <div class="flex space-x-4 mb-8">
             <button id="gacha-tab" class="tab-button bg-gray-300 text-gray-700 active">ガチャ</button>
             <button id="character-tab" class="tab-button bg-gray-300 text-gray-700">キャラクター</button>
         </div>
 
+        <!-- タブコンテンツ -->
         <div id="gacha-content" class="tab-content w-full">
+            <!-- プレイヤー情報 -->
             <div class="w-full flex justify-center space-x-4 mb-4">
                 <div class="card p-4 text-center flex-1">
                     <p class="text-lg font-bold">主人公レベル</p>
@@ -105,6 +132,7 @@
                 </div>
             </div>
 
+            <!-- 所持Gとアイテムの表示 -->
             <div class="w-full flex justify-center space-x-4 mb-8">
                 <div class="card p-4 text-center w-1/2">
                     <p class="text-lg font-bold">所持G</p>
@@ -116,12 +144,13 @@
                 </div>
             </div>
 
+            <!-- ガチャカード -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
                 <div class="card p-6 flex flex-col items-center">
                     <h2 class="text-2xl font-bold mb-4">武器ガチャ</h2>
                     <img src="https://placehold.co/128x128/f0f9ff/0369a1?text=UR武器" alt="UR Weapon" class="rounded-lg mb-4">
                     <p class="text-gray-600 mb-4">武器や防具が排出される</p>
-                    <button class="draw-button w-full" data-cost="500" data-type="weapon">500Gで引く</button>
+                    <button class="draw-button w-full" data-cost="500" data-type="weapon_and_armor">500Gで引く</button>
                 </div>
 
                 <div class="card p-6 flex flex-col items-center">
@@ -146,8 +175,10 @@
         </div>
 
         <div id="character-content" class="tab-content w-full" style="display: none;">
+            <!-- キャラクターのステータス画面 -->
             <div id="status-container"></div>
             
+            <!-- 所持アイテム一覧 -->
             <div class="p-6 bg-white rounded-xl shadow-lg mt-6">
                 <h2 class="text-2xl font-bold mb-4">所持アイテム一覧</h2>
                 <div id="inventory-list" class="flex flex-col space-y-4"></div>
@@ -155,6 +186,7 @@
         </div>
     </div>
 
+    <!-- ガチャ結果モーダル -->
     <div id="result-modal" class="modal">
         <div class="modal-content text-center">
             <h3 id="result-title" class="text-xl font-bold mb-4"></h3>
@@ -167,6 +199,7 @@
         </div>
     </div>
     
+    <!-- レベルアップモーダル -->
     <div id="level-up-modal" class="modal">
         <div class="modal-content text-center">
             <h3 class="text-3xl font-bold text-yellow-500 mb-4">レベルアップ！</h3>
