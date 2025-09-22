@@ -20,8 +20,11 @@ let userData = {
     gold: 0,
     items: [],
     equipped: {
+        head: null,
+        body: null,
+        leg: null,
         weapon: null,
-        pet: null,
+        pets: [null, null, null],
     },
     playerStats: {
         level: 1,
@@ -58,40 +61,46 @@ const CHARACTER_BASE_STATS = {
 
 // 武器マスタデータ
 const WEAPON_MASTER_DATA = [
-    { id: 'w_001', name: '木の剣', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f9f9f9/222?text=木の剣', attack: 5, skill: [{name: 'こうげききょうか', level: 1}]},
-    { id: 'w_002', name: '木の杖', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f9f9f9/222?text=木の杖', attack: 3, skill: [{name: 'こうげききょうか', level: 1}]},
-    { id: 'w_003', name: '木の弓', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f9f9f9/222?text=木の弓', attack: 4, skill: [{name: 'こうげききょうか', level: 1}]},
-    { id: 'w_004', name: 'ボロボロの盾', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f9f9f9/222?text=ボロボロの盾', defense: 5, skill: [{name: 'ぼうぎょきょうか', level: 1}]},
-    { id: 'w_005', name: '古い兜', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f9f9f9/222?text=古い兜', defense: 4, skill: [{name: 'ぼうぎょきょうか', level: 1}]},
-    { id: 'w_006', name: '石の剣', rarity: 'R', imageUrl: 'https://placehold.co/128x128/e9e9e9/222?text=石の剣', attack: 15, skill: [{name: 'こうげききょうか', level: 1}]},
-    { id: 'w_007', name: '石の杖', rarity: 'R', imageUrl: 'https://placehold.co/128x128/e9e9e9/222?text=石の杖', attack: 12, skill: [{name: 'めいちゅうきょうか', level: 1}]},
-    { id: 'w_008', name: '鉄の盾', rarity: 'R', imageUrl: 'https://placehold.co/128x128/e9e9e9/222?text=鉄の盾', defense: 15, skill: [{name: 'ぼうぎょきょうか', level: 1}]},
-    { id: 'w_009', name: '鉄の鎧', rarity: 'R', imageUrl: 'https://placehold.co/128x128/e9e9e9/222?text=鉄の鎧', defense: 18, skill: [{name: 'たいりょくきょうか', level: 1}]},
-    { id: 'w_010', name: '銅の剣', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/c9c9c9/222?text=銅の剣', attack: 30, skill: [{name: 'こうげききょうか', level: 1}]},
-    { id: 'w_011', name: '銅の杖', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/c9c9c9/222?text=銅の杖', attack: 25, skill: [{name: 'めいちゅうきょうか', level: 1}]},
-    { id: 'w_012', name: '銅の鎧', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/c9c9c9/222?text=銅の鎧', defense: 35, skill: [{name: 'たいりょくきょうか', level: 1}]},
-    { id: 'w_013', name: '銀の剣', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/a9a9a9/222?text=銀の剣', attack: 50, skill: [{name: 'こうげききょうか', level: 1}]},
-    { id: 'w_014', name: '銀の鎧', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/a9a9a9/222?text=銀の鎧', defense: 60, skill: [{name: 'ぼうぎょきょうか', level: 1}]},
-    { id: 'w_015', name: '伝説の聖剣', rarity: 'UR', imageUrl: 'https://placehold.co/128x128/ffe4b5/222?text=伝説の聖剣', attack: 100, skill: [{name: 'こうげききょうか', level: 1}, {name: 'めいちゅうきょうか', level: 1}]}
+    { id: 'w_001', name: '木の剣', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f9f9f9/222?text=木の剣', attack: 5, skill: [{name: 'こうげききょうか', level: 1}], type: 'weapon'},
+    { id: 'w_002', name: '石の剣', rarity: 'R', imageUrl: 'https://placehold.co/128x128/e9e9e9/222?text=石の剣', attack: 15, skill: [{name: 'こうげききょうか', level: 1}], type: 'weapon'},
+    { id: 'w_003', name: '銅の剣', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/c9c9c9/222?text=銅の剣', attack: 30, skill: [{name: 'こうげききょうか', level: 1}], type: 'weapon'},
+    { id: 'w_004', name: '銀の剣', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/a9a9a9/222?text=銀の剣', attack: 50, skill: [{name: 'こうげききょうか', level: 1}], type: 'weapon'},
+    { id: 'w_005', name: '伝説の聖剣', rarity: 'UR', imageUrl: 'https://placehold.co/128x128/ffe4b5/222?text=伝説の聖剣', attack: 100, skill: [{name: 'こうげききょうか', level: 1}, {name: 'めいちゅうきょうか', level: 1}], type: 'weapon'}
+];
+
+// 防具マスタデータ
+const ARMOR_MASTER_DATA = [
+    { id: 'a_001', name: 'ボロボロの兜', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f9f9f9/222?text=ボロボロの兜', defense: 2, health: 5, skill: [{name: 'ぼうぎょきょうか', level: 1}], type: 'head'},
+    { id: 'a_002', name: 'ボロボロの鎧', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f9f9f9/222?text=ボロボロの鎧', defense: 3, health: 10, skill: [{name: 'ぼうぎょきょうか', level: 1}], type: 'body'},
+    { id: 'a_003', name: 'ボロボロの足甲', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f9f9f9/222?text=ボロボロの足甲', defense: 1, health: 3, skill: [{name: 'ぼうぎょきょうか', level: 1}], type: 'leg'},
+    { id: 'a_004', name: '鉄の兜', rarity: 'R', imageUrl: 'https://placehold.co/128x128/e9e9e9/222?text=鉄の兜', defense: 5, health: 15, skill: [{name: 'ぼうぎょきょうか', level: 1}], type: 'head'},
+    { id: 'a_005', name: '鉄の鎧', rarity: 'R', imageUrl: 'https://placehold.co/128x128/e9e9e9/222?text=鉄の鎧', defense: 8, health: 25, skill: [{name: 'たいりょくきょうか', level: 1}], type: 'body'},
+    { id: 'a_006', name: '鉄の足甲', rarity: 'R', imageUrl: 'https://placehold.co/128x128/e9e9e9/222?text=鉄の足甲', defense: 4, health: 10, skill: [{name: 'ぼうぎょきょうか', level: 1}], type: 'leg'},
+    { id: 'a_007', name: '銀の兜', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/a9a9a9/222?text=銀の兜', defense: 15, health: 40, skill: [{name: 'ぼうぎょきょうか', level: 1}], type: 'head'},
+    { id: 'a_008', name: '銀の鎧', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/a9a9a9/222?text=銀の鎧', defense: 25, health: 70, skill: [{name: 'たいりょくきょうか', level: 1}, {name: 'きあいきょうか', level: 1}], type: 'body'},
+    { id: 'a_009', name: '銀の足甲', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/a9a9a9/222?text=銀の足甲', defense: 10, health: 25, skill: [{name: 'ぼうぎょきょうか', level: 1}], type: 'leg'},
+    { id: 'a_010', name: '神聖な王冠', rarity: 'UR', imageUrl: 'https://placehold.co/128x128/ffe4b5/222?text=神聖な王冠', defense: 30, health: 80, skill: [{name: 'こうげききょうか', level: 1}, {name: 'たいりょくきょうか', level: 1}], type: 'head'},
+    { id: 'a_011', name: '伝説の鎧', rarity: 'UR', imageUrl: 'https://placehold.co/128x128/ffe4b5/222?text=伝説の鎧', defense: 50, health: 150, skill: [{name: 'こうげききょうか', level: 1}, {name: 'ぼうぎょきょうか', level: 1}], type: 'body'},
+    { id: 'a_012', name: '伝説の靴', rarity: 'UR', imageUrl: 'https://placehold.co/128x128/ffe4b5/222?text=伝説の靴', defense: 20, health: 60, skill: [{name: 'こうげききょうか', level: 1}, {name: 'めいちゅうきょうか', level: 1}], type: 'leg'},
 ];
 
 // ペットマスタデータ
 const PET_MASTER_DATA = [
-    { id: 'p_001', name: 'スライム', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=スライム', health: 10, skill: [{name: 'たいりょくきょうか', level: 1}]},
-    { id: 'p_002', name: '小さい猫', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=小さい猫', health: 8, skill: [{name: 'めいちゅうきょうか', level: 1}]},
-    { id: 'p_003', name: '子犬', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=子犬', health: 9, skill: [{name: 'きあいきょうか', level: 1}]},
-    { id: 'p_004', name: 'ヒヨコ', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=ヒヨコ', health: 7, skill: [{name: 'ぼうぎょきょうか', level: 1}]},
-    { id: 'p_005', name: '小さなウサギ', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=小さなウサギ', health: 8, skill: [{name: 'たいりょくきょうか', level: 1}]},
-    { id: 'p_006', name: '火の精霊', rarity: 'R', imageUrl: 'https://placehold.co/128x128/ffefef/ef4444?text=火の精霊', health: 15, skill: [{name: 'こうげききょうか', level: 1}]},
-    { id: 'p_007', name: '水の精霊', rarity: 'R', imageUrl: 'https://placehold.co/128x128/eff0ff/3b82f6?text=水の精霊', health: 15, skill: [{name: 'たいりょくきょうか', level: 1}]},
-    { id: 'p_008', name: '風の精霊', rarity: 'R', imageUrl: 'https://placehold.co/128x128/f0ffff/008080?text=風の精霊', health: 15, skill: [{name: 'きあいきょうか', level: 1}]},
-    { id: 'p_009', name: '土の精霊', rarity: 'R', imageUrl: 'https://placehold.co/128x128/f5f5dc/8b4513?text=土の精霊', health: 18, skill: [{name: 'ぼうぎょきょうか', level: 1}]},
-    { id: 'p_010', name: 'フェニックス', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/ffbf00/8b4513?text=フェニックス', health: 30, skill: [{name: 'たいりょくきょうか', level: 1}]},
-    { id: 'p_011', name: 'グリフォン', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/ccffcc/008000?text=グリフォン', health: 35, skill: [{name: 'こうげききょうか', level: 1}, {name: 'めいちゅうきょうか', level: 1}]},
-    { id: 'p_012', name: 'ドラゴン', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/a9a9a9/8b0000?text=ドラゴン', health: 40, skill: [{name: 'きあいきょうか', level: 1}]},
-    { id: 'p_013', name: '幻獣キメラ', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/f0f8ff/4169e1?text=幻獣キメラ', health: 50, skill: [{name: 'こうげききょうか', level: 1}, {name: 'ぼうぎょきょうか', level: 1}]},
-    { id: 'p_014', name: '伝説のユニコーン', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/e6e6fa/8a2be2?text=伝説のユニコーン', health: 60, skill: [{name: 'たいりょくきょうか', level: 1}, {name: 'きあいきょうか', level: 1}]},
-    { id: 'p_015', name: '神獣ケルベロス', rarity: 'UR', imageUrl: 'https://placehold.co/128x128/2c3e50/ecf0f1?text=神獣ケルベロス', health: 100, skill: [{name: 'こうげききょうか', level: 1}, {name: 'ぼうぎょきょうか', level: 1}, {name: 'きあいきょうか', level: 1}]}
+    { id: 'p_001', name: 'スライム', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=スライム', health: 10, skill: [{name: 'たいりょくきょうか', level: 1}], type: 'pet'},
+    { id: 'p_002', name: '小さい猫', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=小さい猫', health: 8, skill: [{name: 'めいちゅうきょうか', level: 1}], type: 'pet'},
+    { id: 'p_003', name: '子犬', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=子犬', health: 9, skill: [{name: 'きあいきょうか', level: 1}], type: 'pet'},
+    { id: 'p_004', name: 'ヒヨコ', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=ヒヨコ', health: 7, skill: [{name: 'ぼうぎょきょうか', level: 1}], type: 'pet'},
+    { id: 'p_005', name: '小さなウサギ', rarity: 'N', imageUrl: 'https://placehold.co/128x128/f0fff0/1e40af?text=小さなウサギ', health: 8, skill: [{name: 'たいりょくきょうか', level: 1}], type: 'pet'},
+    { id: 'p_006', name: '火の精霊', rarity: 'R', imageUrl: 'https://placehold.co/128x128/ffefef/ef4444?text=火の精霊', health: 15, skill: [{name: 'こうげききょうか', level: 1}], type: 'pet'},
+    { id: 'p_007', name: '水の精霊', rarity: 'R', imageUrl: 'https://placehold.co/128x128/eff0ff/3b82f6?text=水の精霊', health: 15, skill: [{name: 'たいりょくきょうか', level: 1}], type: 'pet'},
+    { id: 'p_008', name: '風の精霊', rarity: 'R', imageUrl: 'https://placehold.co/128x128/f0ffff/008080?text=風の精霊', health: 15, skill: [{name: 'きあいきょうか', level: 1}], type: 'pet'},
+    { id: 'p_009', name: '土の精霊', rarity: 'R', imageUrl: 'https://placehold.co/128x128/f5f5dc/8b4513?text=土の精霊', health: 18, skill: [{name: 'ぼうぎょきょうか', level: 1}], type: 'pet'},
+    { id: 'p_010', name: 'フェニックス', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/ffbf00/8b4513?text=フェニックス', health: 30, skill: [{name: 'たいりょくきょうか', level: 1}], type: 'pet'},
+    { id: 'p_011', name: 'グリフォン', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/ccffcc/008000?text=グリフォン', health: 35, skill: [{name: 'こうげききょうか', level: 1}, {name: 'めいちゅうきょうか', level: 1}], type: 'pet'},
+    { id: 'p_012', name: 'ドラゴン', rarity: 'SR', imageUrl: 'https://placehold.co/128x128/a9a9a9/8b0000?text=ドラゴン', health: 40, skill: [{name: 'きあいきょうか', level: 1}], type: 'pet'},
+    { id: 'p_013', name: '幻獣キメラ', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/f0f8ff/4169e1?text=幻獣キメラ', health: 50, skill: [{name: 'こうげききょうか', level: 1}, {name: 'ぼうぎょきょうか', level: 1}], type: 'pet'},
+    { id: 'p_014', name: '伝説のユニコーン', rarity: 'SSR', imageUrl: 'https://placehold.co/128x128/e6e6fa/8a2be2?text=伝説のユニコーン', health: 60, skill: [{name: 'たいりょくきょうか', level: 1}, {name: 'きあいきょうか', level: 1}], type: 'pet'},
+    { id: 'p_015', name: '神獣ケルベロス', rarity: 'UR', imageUrl: 'https://placehold.co/128x128/2c3e50/ecf0f1?text=神獣ケルベロス', health: 100, skill: [{name: 'こうげききょうか', level: 1}, {name: 'ぼうぎょきょうか', level: 1}, {name: 'きあいきょうか', level: 1}], type: 'pet'}
 ];
 
 // 強化アイテムマスタ
@@ -103,7 +112,8 @@ const UPGRADE_ITEM_MASTER = {
 };
 
 // レアガチャデータ
-const RARE_GACHA_DATA = [...WEAPON_MASTER_DATA, ...PET_MASTER_DATA];
+const RARE_GACHA_DATA = [...WEAPON_MASTER_DATA, ...ARMOR_MASTER_DATA, ...PET_MASTER_DATA];
+const WEAPON_ARMOR_GACHA_DATA = [...WEAPON_MASTER_DATA, ...ARMOR_MASTER_DATA];
 
 // アプリの初期化とユーザー認証
 async function initApp() {
@@ -150,9 +160,13 @@ function calculateTotalStats() {
     let totalDefense = CHARACTER_BASE_STATS.defense + (userData.playerStats.level - 1) * 1;
     let totalHealth = CHARACTER_BASE_STATS.health + (userData.playerStats.level - 1) * 10;
     
-    const equippedWeapon = userData.equipped.weapon;
-    const equippedPet = userData.equipped.pet;
-    const equipped = [equippedWeapon, equippedPet].filter(Boolean);
+    const equipped = [
+        userData.equipped.head,
+        userData.equipped.body,
+        userData.equipped.leg,
+        userData.equipped.weapon,
+        ...userData.equipped.pets
+    ].filter(Boolean);
 
     equipped.forEach(item => {
         if (item.attack) totalAttack += Math.round(item.attack * Math.pow(1.25, item.level - 1));
@@ -233,8 +247,8 @@ const drawGacha = async (type, cost) => {
 
     let gachaData;
     let drawChances = {};
-    if (type === 'weapon') {
-        gachaData = WEAPON_MASTER_DATA;
+    if (type === 'weapon_and_armor') {
+        gachaData = WEAPON_ARMOR_GACHA_DATA;
         drawChances = { 'N': 35, 'R': 30, 'SR': 24, 'SSR': 10, 'UR': 1 };
     } else if (type === 'pet') {
         gachaData = PET_MASTER_DATA;
@@ -308,7 +322,6 @@ const drawGacha = async (type, cost) => {
         document.getElementById('result-modal').style.display = 'flex';
     }
 
-    // 強化アイテムをドロップ
     const upgradeItemCount = Math.floor(Math.random() * 3) + 1;
     for (let i = 0; i < upgradeItemCount; i++) {
         newItems.push({...UPGRADE_ITEM_MASTER});
@@ -329,15 +342,22 @@ const drawGacha = async (type, cost) => {
 
 // アイテムを装備
 const equipItem = async (itemId) => {
-    const itemToEquip = userData.items.find((item, index) => item.id === itemId);
+    const itemToEquip = userData.items.find((item) => item.id === itemId);
     if (!itemToEquip) return;
     
-    const newEquipped = {...userData.equipped};
-    if (WEAPON_MASTER_DATA.some(w => w.id === itemToEquip.id)) {
-        newEquipped.weapon = itemToEquip;
-    } else if (PET_MASTER_DATA.some(p => p.id === itemToEquip.id)) {
-        newEquipped.pet = itemToEquip;
+    const newEquipped = { ...userData.equipped };
+
+    if (itemToEquip.type === 'pet') {
+        const emptySlotIndex = newEquipped.pets.findIndex(slot => slot === null);
+        if (emptySlotIndex !== -1) {
+            newEquipped.pets[emptySlotIndex] = itemToEquip;
+        } else {
+            newEquipped.pets[0] = itemToEquip;
+        }
+    } else {
+        newEquipped[itemToEquip.type] = itemToEquip;
     }
+
     await updateFirestore({ equipped: newEquipped });
 };
 
@@ -374,19 +394,28 @@ const upgradeItem = async (itemId) => {
 // ステータス画面の描画
 const renderStatusScreen = () => {
     const statusContainer = document.getElementById('status-container');
-    const equippedWeapon = userData.equipped.weapon;
-    const equippedPet = userData.equipped.pet;
     const totalStats = calculateTotalStats();
+
+    const equippedSlots = [
+        { name: 'あたま', item: userData.equipped.head, defaultImg: 'https://placehold.co/128x128/ccc/222?text=あたま' },
+        { name: 'からだ', item: userData.equipped.body, defaultImg: 'https://placehold.co/128x128/ccc/222?text=からだ' },
+        { name: 'あし', item: userData.equipped.leg, defaultImg: 'https://placehold.co/128x128/ccc/222?text=あし' },
+        { name: '武器', item: userData.equipped.weapon, defaultImg: 'https://placehold.co/128x128/ccc/222?text=武器' },
+    ];
+    
+    const petSlots = userData.equipped.pets.map((item, index) => ({
+        name: `ペット${index + 1}`,
+        item,
+        defaultImg: 'https://placehold.co/128x128/ccc/222?text=ペット'
+    }));
 
     statusContainer.innerHTML = `
         <div class="p-6 bg-white rounded-xl shadow-lg mb-6">
             <h2 class="text-2xl font-bold mb-4">キャラクターのステータス</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
                 <div>
-                    <p class="text-lg font-bold">基本ステータス</p>
-                    <p>攻撃力: ${CHARACTER_BASE_STATS.attack + (userData.playerStats.level - 1) * 2}</p>
-                    <p>防御力: ${CHARACTER_BASE_STATS.defense + (userData.playerStats.level - 1) * 1}</p>
-                    <p>体力: ${CHARACTER_BASE_STATS.health + (userData.playerStats.level - 1) * 10}</p>
+                    <p class="text-lg font-bold">レベル</p>
+                    <p class="text-2xl font-bold text-purple-600">${userData.playerStats.level}</p>
                 </div>
                 <div>
                     <p class="text-lg font-bold">総合ステータス</p>
@@ -397,17 +426,22 @@ const renderStatusScreen = () => {
             </div>
             <div class="mt-6 border-t pt-4">
                 <h3 class="text-xl font-bold mb-4">装備品</h3>
-                <div class="flex justify-center space-x-8">
-                    <div class="text-center">
-                        <p class="font-bold">武器/防具</p>
-                        <img src="${equippedWeapon ? equippedWeapon.imageUrl : 'https://placehold.co/128x128/ccc/222?text=未装備'}" class="w-24 h-24 rounded-lg mt-2 mx-auto">
-                        <p class="mt-2 text-sm">${equippedWeapon ? equippedWeapon.name : '未装備'}</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="font-bold">ペット</p>
-                        <img src="${equippedPet ? equippedPet.imageUrl : 'https://placehold.co/128x128/ccc/222?text=未装備'}" class="w-24 h-24 rounded-lg mt-2 mx-auto">
-                        <p class="mt-2 text-sm">${equippedPet ? equippedPet.name : '未装備'}</p>
-                    </div>
+                <div class="flex flex-wrap justify-center gap-4">
+                    ${equippedSlots.map(slot => `
+                        <div class="equipment-slot">
+                            <span class="equipment-slot-label">${slot.name}</span>
+                            <img src="${slot.item ? slot.item.imageUrl : slot.defaultImg}" alt="${slot.name}">
+                        </div>
+                    `).join('')}
+                </div>
+                <h3 class="text-xl font-bold mb-4 mt-6">ペット</h3>
+                <div class="flex flex-wrap justify-center gap-4">
+                    ${petSlots.map(slot => `
+                        <div class="equipment-slot">
+                            <span class="equipment-slot-label">${slot.name}</span>
+                            <img src="${slot.item ? slot.item.imageUrl : slot.defaultImg}" alt="${slot.name}">
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         </div>
@@ -419,7 +453,7 @@ const renderItemInventory = () => {
     const inventoryContainer = document.getElementById('inventory-list');
     inventoryContainer.innerHTML = '';
     
-    const weaponsAndPets = userData.items.filter(item => WEAPON_MASTER_DATA.some(w => w.id === item.id) || PET_MASTER_DATA.some(p => p.id === item.id));
+    const equippableItems = userData.items.filter(item => item.type);
     const upgradeItems = userData.items.filter(item => item.id === UPGRADE_ITEM_MASTER.id);
     const upgradeItemCount = upgradeItems.length;
 
@@ -438,7 +472,7 @@ const renderItemInventory = () => {
         inventoryContainer.appendChild(upgradeItemEl);
     }
 
-    weaponsAndPets.forEach(item => {
+    equippableItems.forEach(item => {
         const itemEl = document.createElement('div');
         itemEl.className = `card p-4 flex justify-between items-center mb-2`;
         itemEl.innerHTML = `
