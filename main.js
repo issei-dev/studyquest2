@@ -31,7 +31,9 @@ let userData = {
         exp: 0,
         gachaCount: 0,
         enemyCount: 0
-    }
+    },
+    stamps: [], // 新しいスタンプデータ
+    calendar: {}, // 新しいカレンダーデータ
 };
 
 // スキルマスタデータ
@@ -193,11 +195,11 @@ function calculateTotalStats() {
 // UIの更新
 const updateUI = () => {
     document.getElementById('user-gold').textContent = userData.gold;
-    document.getElementById('item-count').textContent = userData.items.length;
     document.getElementById('player-level').textContent = userData.playerStats.level;
-    document.getElementById('gacha-count').textContent = userData.playerStats.gachaCount;
+    document.getElementById('enemy-count').textContent = userData.playerStats.enemyCount;
     renderStatusScreen();
     renderItemInventory();
+    renderCalendar();
 };
 
 // レベルアップのチェックと実行
@@ -322,16 +324,11 @@ const drawGacha = async (type, cost) => {
         document.getElementById('result-modal').style.display = 'flex';
     }
 
-    const upgradeItemCount = Math.floor(Math.random() * 3) + 1;
-    for (let i = 0; i < upgradeItemCount; i++) {
-        newItems.push({...UPGRADE_ITEM_MASTER});
-    }
-
     const newPlayerStats = {
         ...userData.playerStats,
         gachaCount: userData.playerStats.gachaCount + 1,
     };
-
+    
     await updateFirestore({
         gold: userData.gold - cost,
         items: newItems,
@@ -504,6 +501,44 @@ const renderItemInventory = () => {
     });
 };
 
+// カレンダーの描画
+const renderCalendar = () => {
+    const calendarGrid = document.getElementById('calendar-grid');
+    calendarGrid.innerHTML = '';
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(year, month, 1).getDay(); // 0 = Sunday
+
+    const todayString = `${year}-${String(month + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    // 空のセルを挿入
+    for (let i = 0; i < firstDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'w-10 h-10 border rounded-lg';
+        calendarGrid.appendChild(emptyCell);
+    }
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const isStamped = userData.calendar[dateString] === true;
+        
+        const cell = document.createElement('div');
+        cell.className = `w-10 h-10 border rounded-lg flex items-center justify-center relative ${isStamped ? 'bg-yellow-300' : 'bg-gray-100'} ${dateString === todayString ? 'border-2 border-yellow-500' : ''}`;
+        cell.textContent = i;
+        calendarGrid.appendChild(cell);
+
+        if (isStamped) {
+            const stamp = document.createElement('span');
+            stamp.textContent = '✔️';
+            stamp.className = 'absolute bottom-1 right-1 text-sm';
+            cell.appendChild(stamp);
+        }
+    }
+};
+
+
 // タブ切り替え
 const switchTab = (tabId) => {
     document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
@@ -518,6 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('gacha-tab').addEventListener('click', () => switchTab('gacha-content'));
     document.getElementById('character-tab').addEventListener('click', () => switchTab('character-content'));
+    document.getElementById('stamp-tab').addEventListener('click', () => switchTab('stamp-content'));
     
     document.getElementById('add-gold-btn').addEventListener('click', async () => {
         await updateFirestore({ gold: userData.gold + 300 });
@@ -533,7 +569,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         await addExp(2); // 敵を倒すと経験値2を獲得
     });
-    
+
+    document.getElementById('stamp-btn').addEventListener('click', async () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayString = `${year}-${month}-${day}`;
+        
+        if (!userData.calendar[todayString]) {
+            await updateFirestore({
+                calendar: {
+                    ...userData.calendar,
+                    [todayString]: true
+                },
+                gold: userData.gold + 100 // スタンプボーナス
+            });
+            // ユーザーにスタンプボーナスを知らせる
+            const modal = document.getElementById('result-modal');
+            modal.style.display = 'flex';
+            document.getElementById('result-title').textContent = 'スタンプボーナス！';
+            document.getElementById('result-name').textContent = '今日のスタンプをゲットしました！';
+            document.getElementById('result-rarity').textContent = '+100G';
+            document.getElementById('result-image').src = 'https://placehold.co/128x128/f0fff0/1e40af?text=✔️';
+            document.getElementById('result-stats').textContent = '';
+            document.getElementById('result-skills').innerHTML = '';
+        } else {
+            const modal = document.getElementById('result-modal');
+            modal.style.display = 'flex';
+            document.getElementById('result-title').textContent = 'スタンプ済み';
+            document.getElementById('result-name').textContent = '今日はすでにスタンプを押しました。';
+            document.getElementById('result-rarity').textContent = '';
+            document.getElementById('result-image').src = 'https://placehold.co/128x128/ffbf00/8b4513?text=済';
+            document.getElementById('result-stats').textContent = '';
+            document.getElementById('result-skills').innerHTML = '';
+        }
+    });
+
     document.getElementById('close-modal').addEventListener('click', () => {
         document.getElementById('result-modal').style.display = 'none';
     });
