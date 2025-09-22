@@ -210,9 +210,15 @@ const updateUI = () => {
     document.getElementById('player-level').textContent = userData.playerStats.level;
     document.getElementById('enemy-count').textContent = userData.playerStats.enemyCount;
     document.getElementById('treasure-box-count').textContent = 5 - userData.treasureBoxCount;
-    renderStatusScreen();
-    renderItemInventory();
-    renderCalendar();
+
+    // 現在アクティブなタブに基づいてUIを更新
+    const activeTabId = document.querySelector('.tab-button.active').id;
+    if (activeTabId === 'character-tab') {
+        renderStatusScreen();
+        renderItemInventory();
+    } else if (activeTabId === 'stamp-tab') {
+        renderCalendar();
+    }
 };
 
 // レベルアップのチェックと実行
@@ -566,17 +572,19 @@ const switchTab = (tabId) => {
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
 
-    document.getElementById('gacha-tab').addEventListener('click', () => switchTab('gacha-content'));
+    document.getElementById('gacha-tab').addEventListener('click', () => {
+        switchTab('gacha-content');
+        updateUI();
+    });
     
     document.getElementById('character-tab').addEventListener('click', () => {
         switchTab('character-content');
-        renderStatusScreen();
-        renderItemInventory();
+        updateUI();
     });
 
     document.getElementById('stamp-tab').addEventListener('click', () => {
         switchTab('stamp-content');
-        renderCalendar();
+        updateUI();
     });
     
     document.getElementById('add-enemy-btn').addEventListener('click', async () => {
