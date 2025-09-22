@@ -1,0 +1,55 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+}
+header {
+    background-color: #333;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+}
+nav button {
+    background-color: #555;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin: 0 5px;
+}
+main {
+    padding: 20px;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+.item-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.item-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+    width: 120px;
+}
+.enemy-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+    width: 150px;
+    margin: 10px;
+}
+.enemy-card img {
+    width: 100px;
+    height: 100px;
+}
+.item-card img {
+    width: 80px;
+    height: 80px;
+}
