@@ -1,55 +1,91 @@
 body {
-    font-family: sans-serif;
+    font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f0f0f0;
+    background-color: #fce4ec; /* 明るいピンク */
 }
 header {
-    background-color: #333;
+    background-color: #ff9800; /* 鮮やかなオレンジ */
     color: white;
     padding: 1rem;
     text-align: center;
 }
 nav button {
-    background-color: #555;
-    color: white;
+    background-color: #ffc107; /* 明るい黄色 */
+    color: #333;
     border: none;
     padding: 10px 20px;
+    font-weight: bold;
     cursor: pointer;
     margin: 0 5px;
+    border-radius: 5px;
+}
+nav button:hover {
+    background-color: #ffeb3b;
 }
 main {
     padding: 20px;
 }
 .tab-content {
     display: none;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 .tab-content.active {
     display: block;
 }
-.item-list {
+h2, h3 {
+    color: #e91e63; /* ピンク */
+}
+.item-list, .enemy-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 15px;
+    justify-content: center;
 }
-.item-card {
-    border: 1px solid #ccc;
-    padding: 10px;
+.item-card, .enemy-card {
+    border: 2px solid #8bc34a; /* 明るい緑 */
+    background-color: #f1f8e9; /* 薄い緑 */
+    border-radius: 10px;
+    padding: 15px;
     text-align: center;
-    width: 120px;
+    width: 140px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-.enemy-card {
-    border: 1px solid #ccc;
-    padding: 10px;
-    text-align: center;
-    width: 150px;
-    margin: 10px;
-}
-.enemy-card img {
+.item-card img, .enemy-card img {
     width: 100px;
     height: 100px;
 }
-.item-card img {
-    width: 80px;
-    height: 80px;
+button {
+    background-color: #4caf50; /* 緑 */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+button:hover {
+    background-color: #66bb6a;
+}
+#gacha-result {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #fff9c4; /* クリーム色 */
+    border: 2px dashed #ffb300;
+    text-align: center;
+}
+#character-status {
+    background-color: #e3f2fd; /* 薄い青 */
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #2196f3;
+}
+#battle-log {
+    margin-top: 20px;
+    font-weight: bold;
+    color: #d32f2f;
 }
