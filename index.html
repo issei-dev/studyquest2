@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>勉強RPG</title>
+    <title>べんきょうRPG</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,44 +11,44 @@
     <header>
         <nav>
             <button onclick="showTab('gacha')">スタンプ、ガチャ</button>
-            <button onclick="showTab('inventory')">キャラクター、アイテム一覧</button>
-            <button onclick="showTab('enemy')">敵</button>
+            <button onclick="showTab('inventory')">キャラ、もちもの</button>
+            <button onclick="showTab('enemy')">てき</button>
             <button onclick="showTab('calendar')">カレンダー</button>
         </nav>
     </header>
 
     <main>
         <div id="gacha" class="tab-content active">
-            <h2>スタンプ＆ガチャ</h2>
-            <p>今日のガチャ残り回数: <span id="gacha-count">5</span>回</p>
+            <h2>スタンプとガチャ</h2>
+            <p>きょうのガチャのこりかいすう: <span id="gacha-count">5</span>かい</p>
             <form id="gacha-form">
-                <label for="study-content">今日の勉強内容:</label><br>
+                <label for="study-content">きょうの べんきょうないよう:</label><br>
                 <textarea id="study-content" rows="4" cols="50" required></textarea><br><br>
                 
-                <label for="gacha-type">ガチャ選択:</label>
+                <label for="gacha-type">ガチャをえらんでね:</label>
                 <select id="gacha-type">
-                    <option value="weapon">ぶきガチャ</option>
-                    <option value="pet">ペットガチャ</option>
+                    <option value="weapon">ぶき ガチャ</option>
+                    <option value="pet">ペット ガチャ</option>
                 </select><br><br>
                 
-                <button type="submit">ガチャを回す</button>
+                <button type="submit">ガチャをまわす</button>
             </form>
             <div id="gacha-result"></div>
         </div>
 
         <div id="inventory" class="tab-content">
-            <h2>キャラクター、アイテム一覧</h2>
+            <h2>キャラクターと アイテムいちらん</h2>
             <div id="character-status"></div>
             <hr>
-            <h3>装備</h3>
+            <h3>そうび</h3>
             <div id="equipped-items" class="item-list"></div>
             <hr>
-            <h3>持ち物</h3>
+            <h3>もちもの</h3>
             <div id="unequipped-items" class="item-list"></div>
         </div>
 
         <div id="enemy" class="tab-content">
-            <h2>敵</h2>
+            <h2>てき</h2>
             <div id="enemy-container"></div>
             <div id="battle-log"></div>
         </div>
