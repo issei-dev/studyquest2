@@ -259,4 +259,134 @@ function spawnEnemies() {
         // 全ての敵が倒されたか、または初回時に新しい敵を出現させる
         const availableEnemies = enemies.filter(e => !e.isBoss); // ボス以外から選ぶ
         currentEnemies = [];
-        for (let i =
+        for (let i = 0; i < 3; i++) {
+            const randomEnemy = availableEnemies[Math.floor(Math.random() * availableEnemies.length)];
+            currentEnemies.push({...randomEnemy, originalId: randomEnemy.id, id: Date.now() + i}); // HPを個別に管理するため複製し、ユニークなIDを付与
+        }
+    }
+}
+
+function updateEnemyUI() {
+    const enemyContainer = document.getElementById('enemy-container');
+    enemyContainer.innerHTML = '';
+    
+    // プレイヤーのステータス表示
+    document.getElementById('player-status-enemy-tab').innerHTML = `
+        <p>じぶんの たいりょく:</p>
+        <div class="hp-bar-container">
+            <div id="player-hp-bar" class="hp-bar"></div>
+        </div>
+        <p>こうげき力: ${userData.attack}</p>
+    `;
+    updateHpBar('player-hp-bar', userData.hp, userData.maxHp);
+
+    currentEnemies.forEach(enemy => {
+        if (enemy.hp > 0) {
+            const card = document.createElement('div');
+            card.className = 'enemy-card';
+            card.id = `enemy-card-${enemy.id}`; // ユニークなIDを付与
+            card.innerHTML = `
+                <img src="${enemy.imageUrl}" alt="${enemy.name}">
+                <h4>${enemy.name}</h4>
+                <div class="hp-bar-container">
+                    <div id="enemy-hp-bar-${enemy.id}" class="hp-bar"></div>
+                </div>
+                <button onclick="attackEnemy(${enemy.id})">こうげき！</button>
+            `;
+            enemyContainer.appendChild(card);
+            updateHpBar(`enemy-hp-bar-${enemy.id}`, enemy.hp, enemy.maxHp);
+        }
+    });
+    
+    if (currentEnemies.every(e => e.hp <= 0)) {
+        document.getElementById('battle-log').textContent = 'ぜんぶのてきをたおしました！';
+        currentEnemies = []; // 敵をリセット
+        // setTimeout(() => spawnEnemies(), 1000); // 少し待って次の敵を出現させる
+        // setTimeout(() => updateEnemyUI(), 1200);
+    }
+}
+
+async function attackEnemy(enemyId) {
+    const enemy = currentEnemies.find(e => e.id === enemyId);
+    if (!enemy || enemy.hp <= 0) {
+        document.getElementById('battle-log').textContent = 'そのてきは もうたおれてるよ！';
+        return;
+    }
+    if (userData.hp <= 0) {
+        document.getElementById('battle-log').textContent = 'あなたはたおれてしまった...もう こうげきできないよ。';
+        return;
+    }
+
+    const battleLog = document.getElementById('battle-log');
+    
+    // 自分の攻撃
+    const userAttack = userData.attack;
+    enemy.hp -= userAttack;
+    battleLog.textContent = `${enemy.name}に${userAttack}のダメージ！`;
+    
+    // モンスター揺れアニメーション
+    const enemyCard = document.getElementById(`enemy-card-${enemy.id}`);
+    if (enemyCard) {
+        enemyCard.classList.add('shake-enemy');
+        await new Promise(resolve => setTimeout(resolve, 200)); // アニメーション時間
+        enemyCard.classList.remove('shake-enemy');
+    }
+    
+    updateHpBar(`enemy-hp-bar-${enemy.id}`, enemy.hp, enemy.maxHp);
+    
+    // 敵の反撃
+    if (enemy.hp > 0) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // 少し待ってから敵が攻撃
+        let enemyAttack = enemy.attack;
+        if (enemy.isBoss) {
+            enemyAttack *= 2; // ボスは2回攻撃（ダメージ2倍として表現）
+        }
+        const damageToUser = Math.max(1, enemyAttack - userData.defense);
+        userData.hp -= damageToUser;
+        battleLog.textContent += ` てきから${damageToUser}のダメージをうけた！`;
+
+        // 画面揺れアニメーション
+        document.body.classList.add('shake-screen');
+        await new Promise(resolve => setTimeout(resolve, 300)); // アニメーション時間
+        document.body.classList.remove('shake-screen');
+    }
+    
+    updateHpBar('player-hp-bar', userData.hp, userData.maxHp);
+
+    // ユーザーのHPが0いかになったらゲームオーバー
+    if (userData.hp <= 0) {
+        battleLog.textContent += ' あなたはたおれてしまった...';
+        // 全てのボタンを無効化するなどの処理
+        document.querySelectorAll('#enemy-container button').forEach(button => button.disabled = true);
+    } else if (currentEnemies.every(e => e.hp <= 0)) {
+        battleLog.textContent = 'ぜんぶのてきをたおしました！';
+        currentEnemies = []; // 敵をリセット
+        await new Promise(resolve => setTimeout(resolve, 1500)); // ログ表示のために少し待つ
+        spawnEnemies(); // 新しい敵を出現させる
+        updateEnemyUI(); // UIを更新
+    }
+    
+    saveData();
+}
+
+// --- カレンダーロジック ---
+function updateCalendarUI() {
+    const logList = document.getElementById('study-log-list');
+    logList.innerHTML = '';
+    
+    const sortedDates = Object.keys(gachaLog).sort().reverse();
+    
+    sortedDates.forEach(date => {
+        const log = gachaLog[date];
+        const item = document.createElement('li');
+        const studyContent = log.studyContent.length > 0 ? log.studyContent.join(', ') : 'きろくなし';
+        item.textContent = `${date}: ${studyContent}`;
+        logList.appendChild(item);
+    });
+}
+
+// --- 初期化 ---
+window.onload = () => {
+    loadData();
+    showTab('gacha'); // 初期タブはガチャ
+};
