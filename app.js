@@ -12,27 +12,27 @@ let userData = {
 
 // アイテムのデータ（日本語の表現をよりやわらかく、ひらがなを多用）
 const items = [
-    { id: 1, name: 'きのつるぎ', type: 'weapon', rarity: 'N', attackBonus: 5, defenseBonus: 0, hpBonus: 0, maxLevel: 5, imageUrl: 'https://placehold.jp/150x150.png' },
-    { id: 2, name: 'いしのたて', type: 'armor', rarity: 'N', attackBonus: 0, defenseBonus: 3, hpBonus: 0, maxLevel: 5, imageUrl: 'https://placehold.jp/150x150.png' },
-    { id: 3, name: 'スライム', type: 'pet', rarity: 'N', attackBonus: 2, defenseBonus: 2, hpBonus: 5, maxLevel: 5, imageUrl: 'https://placehold.jp/150x150.png' },
-    { id: 4, name: 'てつのつるぎ', type: 'weapon', rarity: 'R', attackBonus: 10, defenseBonus: 0, hpBonus: 0, maxLevel: 10, imageUrl: 'https://placehold.jp/150x150.png' },
-    { id: 5, name: 'かわのよろい', type: 'armor', rarity: 'R', attackBonus: 0, defenseBonus: 7, hpBonus: 0, maxLevel: 10, imageUrl: 'https://placehold.jp/150x150.png' },
-    { id: 6, name: 'ほのおのつるぎ', type: 'weapon', rarity: 'SR', attackBonus: 25, defenseBonus: 0, hpBonus: 0, maxLevel: 25, imageUrl: 'https://placehold.jp/150x150.png' },
-    { id: 7, name: 'ドラゴンのたて', type: 'armor', rarity: 'SSR', attackBonus: 0, defenseBonus: 30, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/150x150.png' },
+    { id: 1, name: 'きのつるぎ', type: 'weapon', rarity: 'N', attackBonus: 5, defenseBonus: 0, hpBonus: 0, maxLevel: 5, imageUrl: 'https://placehold.jp/300x300.png?text=きのつるぎ' },
+    { id: 2, name: 'いしのたて', type: 'armor', rarity: 'N', attackBonus: 0, defenseBonus: 3, hpBonus: 0, maxLevel: 5, imageUrl: 'https://placehold.jp/300x300.png?text=いしのたて' },
+    { id: 3, name: 'スライム', type: 'pet', rarity: 'N', attackBonus: 2, defenseBonus: 2, hpBonus: 5, maxLevel: 5, imageUrl: 'https://placehold.jp/300x300.png?text=スライム' },
+    { id: 4, name: 'てつのつるぎ', type: 'weapon', rarity: 'R', attackBonus: 10, defenseBonus: 0, hpBonus: 0, maxLevel: 10, imageUrl: 'https://placehold.jp/300x300.png?text=てつのつるぎ' },
+    { id: 5, name: 'かわのよろい', type: 'armor', rarity: 'R', attackBonus: 0, defenseBonus: 7, hpBonus: 0, maxLevel: 10, imageUrl: 'https://placehold.jp/300x300.png?text=かわのよろい' },
+    { id: 6, name: 'ほのおのつるぎ', type: 'weapon', rarity: 'SR', attackBonus: 25, defenseBonus: 0, hpBonus: 0, maxLevel: 25, imageUrl: 'https://placehold.jp/300x300.png?text=ほのおのつるぎ' },
+    { id: 7, name: 'ドラゴンのたて', type: 'armor', rarity: 'SSR', attackBonus: 0, defenseBonus: 30, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/300x300.png?text=ドラゴンのたて' },
 ];
 
-// 敵のデータ
+// 敵のデータ (画像URLもplacehold.jpで適当に生成)
 const enemies = [
-    { id: 1, name: 'ゴブリン', hp: 20, attack: 5, isBoss: false, imageUrl: 'https://placehold.jp/150x150.png' },
-    { id: 2, name: 'オーク', hp: 50, attack: 15, isBoss: false, imageUrl: 'https://placehold.jp/150x150.png' },
-    { id: 3, name: 'スケルトン', hp: 30, attack: 8, isBoss: false, imageUrl: 'https://placehold.jp/150x150.png' },
-    { id: 4, name: 'ドラゴン', hp: 500, attack: 50, isBoss: true, imageUrl: 'https://placehold.jp/150x150.png' },
+    { id: 1, name: 'ゴブリン', hp: 20, maxHp: 20, attack: 5, isBoss: false, imageUrl: 'https://placehold.jp/300x300.png?text=ゴブリン' },
+    { id: 2, name: 'オーク', hp: 50, maxHp: 50, attack: 15, isBoss: false, imageUrl: 'https://placehold.jp/300x300.png?text=オーク' },
+    { id: 3, name: 'スケルトン', hp: 30, maxHp: 30, attack: 8, isBoss: false, imageUrl: 'https://placehold.jp/300x300.png?text=スケルトン' },
+    { id: 4, name: 'ドラゴン', hp: 500, maxHp: 500, attack: 50, isBoss: true, imageUrl: 'https://placehold.jp/300x300.png?text=ドラゴン' },
 ];
 
 let gachaLog = {};
 let currentEnemies = [];
 
-// --- データ保存・読み込み関数 ---
+// --- データほぞん・よみこみ関数 ---
 function saveData() {
     localStorage.setItem('userData', JSON.stringify(userData));
     localStorage.setItem('gachaLog', JSON.stringify(gachaLog));
@@ -48,9 +48,9 @@ function loadData() {
         gachaLog = JSON.parse(savedGachaLog);
     }
     
-    // 日付がかわったらHPをぜんかいふく
+    // ひづけがかわったらHPをぜんかいふく
     if (!gachaLog[today]) {
-        userData.hp = userData.maxHp;
+        userData.hp = userData.maxHp; // HP全回復
         gachaLog[today] = { count: 0, studyContent: [] };
     }
 }
@@ -69,11 +69,30 @@ function showTab(tabId) {
         updateInventoryUI();
     } else if (tabId === 'enemy') {
         spawnEnemies();
-        updateEnemyUI();
+        updateEnemyUI(); // 敵タブ表示時にプレイヤーHPも更新
     } else if (tabId === 'calendar') {
         updateCalendarUI();
     }
 }
+
+// HPゲージのアップデート
+function updateHpBar(elementId, currentHp, maxHp) {
+    const bar = document.getElementById(elementId);
+    if (!bar) return;
+
+    const percentage = (currentHp / maxHp) * 100;
+    bar.style.width = `${Math.max(0, percentage)}%`; // 0%以下にはならないように
+    bar.textContent = `${currentHp}/${maxHp}`;
+
+    // HP残量に応じた色変更
+    bar.classList.remove('low', 'critical');
+    if (percentage < 25) {
+        bar.classList.add('critical');
+    } else if (percentage < 50) {
+        bar.classList.add('low');
+    }
+}
+
 
 // --- ガチャロジック ---
 function updateGachaUI() {
@@ -155,7 +174,8 @@ function rollGacha(itemPool) {
     
     const filteredItems = itemPool.filter(item => item.rarity === selectedRarity);
     if (filteredItems.length === 0) {
-        return rollGacha(itemPool);
+        // 同じレアリティのアイテムがなければ、別のレアリティのアイテムを探す（再帰的に呼び出す）
+        return rollGacha(itemPool.filter(item => item.rarity !== selectedRarity)); 
     }
     
     return filteredItems[Math.floor(Math.random() * filteredItems.length)];
@@ -235,84 +255,8 @@ function unequipItem(invItem) {
 
 // --- てきとのたたかいロジック ---
 function spawnEnemies() {
-    if (currentEnemies.length === 0) {
-        const stageEnemies = [enemies[0], enemies[1], enemies[2]]; // ゴブリン、オーク、スケルトン
-        currentEnemies = stageEnemies.sort(() => 0.5 - Math.random()).slice(0, 3).map(e => ({...e}));
-    }
-}
-
-function updateEnemyUI() {
-    const enemyContainer = document.getElementById('enemy-container');
-    enemyContainer.innerHTML = '';
-    
-    currentEnemies.forEach(enemy => {
-        if (enemy.hp > 0) {
-            const card = document.createElement('div');
-            card.className = 'enemy-card';
-            card.innerHTML = `
-                <img src="${enemy.imageUrl}" alt="${enemy.name}">
-                <h4>${enemy.name}</h4>
-                <p>HP: <span id="hp-${enemy.id}">${enemy.hp}</span></p>
-                <button onclick="attackEnemy(${enemy.id})">こうげき！</button>
-            `;
-            enemyContainer.appendChild(card);
-        }
-    });
-    
-    if (currentEnemies.every(e => e.hp <= 0)) {
-        document.getElementById('battle-log').textContent = 'ぜんぶのてきをたおしました！';
+    if (currentEnemies.length === 0 || currentEnemies.every(e => e.hp <= 0)) {
+        // 全ての敵が倒されたか、または初回時に新しい敵を出現させる
+        const availableEnemies = enemies.filter(e => !e.isBoss); // ボス以外から選ぶ
         currentEnemies = [];
-        spawnEnemies();
-    }
-}
-
-function attackEnemy(enemyId) {
-    const enemy = currentEnemies.find(e => e.id === enemyId);
-    if (!enemy || enemy.hp <= 0) return;
-    
-    // じぶんのこうげき
-    const userAttack = userData.attack;
-    enemy.hp -= userAttack;
-    document.getElementById('battle-log').textContent = `${enemy.name}に${userAttack}のダメージ！`;
-    
-    // てきの はんげき
-    if (enemy.hp > 0) {
-        let enemyAttack = enemy.attack;
-        if (enemy.isBoss) {
-            enemyAttack *= 2;
-        }
-        const damageToUser = Math.max(1, enemyAttack - userData.defense);
-        userData.hp -= damageToUser;
-        document.getElementById('battle-log').textContent += ` てきから${damageToUser}のダメージをうけた！`;
-    }
-    
-    // ユーザーのHPが0いかになったらゲームオーバー
-    if (userData.hp <= 0) {
-        document.getElementById('battle-log').textContent += ' あなたはたおれてしまった...';
-    }
-    
-    updateEnemyUI();
-    saveData();
-}
-
-// --- カレンダーロジック ---
-function updateCalendarUI() {
-    const logList = document.getElementById('study-log-list');
-    logList.innerHTML = '';
-    
-    const sortedDates = Object.keys(gachaLog).sort().reverse();
-    
-    sortedDates.forEach(date => {
-        const log = gachaLog[date];
-        const item = document.createElement('li');
-        const studyContent = log.studyContent.length > 0 ? log.studyContent.join(', ') : 'きろくなし';
-        item.textContent = `${date}: ${studyContent}`;
-        logList.appendChild(item);
-    });
-}
-
-// --- 初期化 ---
-window.onload = () => {
-    loadData();
-    showTab('gacha');
-};
+        for (let i =
