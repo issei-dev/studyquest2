@@ -400,5 +400,62 @@ async function attackEnemy(enemyId) {
     saveData();
     updateEnemyUI();
 }
+// ... (前回のapp.jsの全てのコードの上部) ...
+// --- 初期データと変数 ---
+const today = new Date().toISOString().slice(0, 10);
+const MAX_GACHA_COUNT = 5;
 
-// ... (handleBattleEnd, updateCalendarUI, window.onload 関数は変更なし) ...
+let userData = {
+// ... (userDataの定義)
+};
+
+let currentStage = 1;
+let enemiesDefeatedInStage = 0;
+const DEFEAT_COUNT_FOR_BOSS = 15;
+
+let gachaLog = {};
+let currentEnemies = [];
+
+// ... (items, EQUIP_SLOTS, ENEMY_GROUPS, DROP_RATESの定義) ...
+
+// ... (saveData, loadData, updateHpBar 関数は省略) ...
+
+// --- UIそうさ関数 ---
+/**
+ * 指定されたIDのタブを表示し、他のタブを非表示にする
+ * @param {string} tabId - 表示するタブのID (例: 'gacha', 'inventory', 'enemy', 'calendar')
+ */
+function showTab(tabId) {
+    // すべてのタブコンテンツを非表示にする
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    // 指定されたタブのみを表示する
+    document.getElementById(tabId).classList.add('active');
+    
+    // タブ表示時に各コンテンツを更新
+    if (tabId === 'gacha') {
+        updateGachaUI();
+    } else if (tabId === 'inventory') {
+        updateInventoryUI();
+    } else if (tabId === 'enemy') {
+        spawnEnemies();
+        updateEnemyUI(); // 敵タブ表示時にプレイヤーHPも更新
+    } else if (tabId === 'calendar') {
+        updateCalendarUI();
+    }
+}
+
+// ... (updateGachaUI, gacha-form submit, rollGacha 関数は省略) ...
+// ... (updateInventoryUI, equipItem, unequipItem, showEnhanceModal, applyEnhancement 関数は省略) ...
+// ... (getStageEnemies, spawnEnemies, updateEnemyUI, calculateDamage, rollDropItem, attackEnemy, handleBattleEnd, updateCalendarUI 関数は省略) ...
+
+
+// --- 初期化 ---
+window.onload = () => {
+    loadData();
+    // 装備ステータスを反映するためインベントリUIを一度更新
+    updateInventoryUI(); 
+    // 初期タブとしてガチャタブを表示
+    showTab('gacha'); 
+};
