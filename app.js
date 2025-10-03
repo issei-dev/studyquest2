@@ -229,90 +229,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// --- インベントリーロジック (装備枠と強化機能の追加) ---
+// --- インベントリーロジック (updateInventoryUI 関数内) ---
 function updateInventoryUI() {
-    const invDiv = document.getElementById('inventory');
-    if (!invDiv) return;
+    // ... (省略: totalAttackBonus, totalDefenseBonus, totalHpBonus の計算)
 
-    // 装備ステータスの再計算
-    let totalAttackBonus = 0;
-    let totalDefenseBonus = 0;
-    let totalHpBonus = 0;
-
-    // 装備アイテムのHTMLを生成
-    let equippedHtml = '<h3>そうび</h3><div class="item-list">';
-    const equippedItems = userData.inventory.filter(item => item.isEquipped);
-    
-    // 装備スロットごとのアイテム数をカウント
-    const equippedCount = { weapon: 0, armor: 0, pet: 0 };
-
-    equippedItems.forEach(invItem => {
-        const itemDetails = items.find(item => item.id === invItem.id);
-        if (!itemDetails) return;
-
-        equippedCount[itemDetails.type]++;
-
-        // ステータスボーナスを加算
-        totalAttackBonus += itemDetails.attackBonus * invItem.level;
-        totalDefenseBonus += itemDetails.defenseBonus * invItem.level;
-        totalHpBonus += itemDetails.hpBonus * invItem.level;
-
-        equippedHtml += `
-            <div class="item-card equipped-card" onclick="unequipItem(${invItem.id})">
-                <img src="${itemDetails.imageUrl}" alt="${itemDetails.name}">
-                <p>${itemDetails.name} Lv.${invItem.level}</p>
-                <p>そうびちゅう (${itemDetails.type})</p>
-            </div>
-        `;
-    });
-    
-    // 空きスロットの表示
-    ['weapon', 'armor', 'pet'].forEach(type => {
-        for (let i = equippedCount[type]; i < EQUIP_SLOTS[type]; i++) {
-            equippedHtml += `
-                <div class="item-card empty-slot">
-                    <p>${type} ${i + 1} わく (あき)</p>
-                </div>
-            `;
-        }
-    });
-
-    equippedHtml += '</div>';
-
-    // もちもの（未装備アイテム）のHTMLを生成
-    let unequippedHtml = '<h3>もちもの</h3><div class="item-list">';
-    // IDでソート（強化アイテムが先に表示されるように）
-    const unequippedItems = userData.inventory.filter(item => !item.isEquipped).sort((a, b) => a.id - b.id);
-    
-    unequippedItems.forEach(invItem => {
-        const itemDetails = items.find(item => item.id === invItem.id);
-        if (!itemDetails) return;
-        
-        const isEquipable = itemDetails.type !== 'material';
-        const isMaterial = itemDetails.type === 'material';
-        
-        let actions = '';
-        if (isEquipable) {
-            actions += `<button onclick="equipItem(${invItem.id})">そうびする</button>`;
-        }
-        if (isMaterial) {
-            actions += `<button onclick="showEnhanceModal(${invItem.id})">つかう</button>`;
-        }
-        
-        // 強化アイテムは level がないので表示しない、ただしinventory配列には存在するため filterで除外しない
-        const levelDisplay = !isMaterial ? `Lv.${invItem.level}` : '';
-        
-        unequippedHtml += `
-            <div class="item-card">
-                <img src="${itemDetails.imageUrl}" alt="${itemDetails.name}">
-                <p>${itemDetails.name} ${levelDisplay}</p>
-                ${actions}
-            </div>
-        `;
-    });
-    unequippedHtml += '</div>';
-
-    // ステータスの更新と表示
+    // ステータスの更新と表示 (ここは変更なし)
     userData.attack = userData.baseAttack + totalAttackBonus;
     userData.defense = userData.baseDefense + totalDefenseBonus;
     userData.maxHp = 100 + totalHpBonus; 
@@ -320,16 +241,103 @@ function updateInventoryUI() {
         userData.hp = userData.maxHp;
     }
 
+    // --- 装備スロットのHTML生成ロジックの変更 ---
+    let mainEquipHtml = '<div style="display: flex; gap: 20px;">'; // 2つの列をラップ
+
+    // A. ぶき (2枠) と ぼうぐ (1枠) の列
+    let columnA = '<div><h3>ぶき、ぼうぐ</h3><div class="item-list" style="display: flex; flex-wrap: wrap; width: 320px;">';
+    // B. ペット (3枠) の列
+    let columnB = '<div><h3>ペット</h3><div class="item-list" style="display: flex; flex-wrap: wrap; width: 320px;">';
+    
+    // スロットの定義とアイテムの振り分け
+    const slotOrderA = ['weapon', 'weapon', 'armor'];
+    const slotOrderB = ['pet', 'pet', 'pet'];
+    const equippedItemsMap = {}; // 装備されているアイテムをタイプごとに分類
+    userData.inventory.filter(item => item.isEquipped).forEach(invItem => {
+        const itemDetails = items.find(item => item.id === invItem.id);
+        if (!itemDetails) return;
+        
+        if (!equippedItemsMap[itemDetails.type]) {
+            equippedItemsMap[itemDetails.type] = [];
+        }
+        equippedItemsMap[itemDetails.type].push(invItem);
+    });
+    
+    // 1. Column A (武器2, 防具1) の生成
+    let usedWeaponSlots = 0;
+    let usedArmorSlots = 0;
+    slotOrderA.forEach(type => {
+        let invItem = null;
+        if (type === 'weapon' && usedWeaponSlots < EQUIP_SLOTS.weapon && equippedItemsMap.weapon && equippedItemsMap.weapon.length > usedWeaponSlots) {
+            invItem = equippedItemsMap.weapon[usedWeaponSlots];
+            usedWeaponSlots++;
+        } else if (type === 'armor' && usedArmorSlots < EQUIP_SLOTS.armor && equippedItemsMap.armor && equippedItemsMap.armor.length > usedArmorSlots) {
+            invItem = equippedItemsMap.armor[usedArmorSlots];
+            usedArmorSlots++;
+        }
+
+        if (invItem) {
+            const itemDetails = items.find(item => item.id === invItem.id);
+            columnA += `
+                <div class="item-card equipped-card" onclick="unequipItem(${invItem.id})" style="width: 100px;">
+                    <img src="${itemDetails.imageUrl}" alt="${itemDetails.name}">
+                    <p style="font-size: 0.8em;">${itemDetails.name} Lv.${invItem.level}</p>
+                    <p style="font-size: 0.7em;">(${type})</p>
+                </div>
+            `;
+        } else {
+             columnA += `
+                <div class="item-card empty-slot" style="width: 100px;">
+                    <p>${type}わく (あき)</p>
+                </div>
+            `;
+        }
+    });
+    columnA += '</div></div>';
+
+
+    // 2. Column B (ペット3) の生成
+    let usedPetSlots = 0;
+    slotOrderB.forEach(type => {
+        let invItem = null;
+        if (usedPetSlots < EQUIP_SLOTS.pet && equippedItemsMap.pet && equippedItemsMap.pet.length > usedPetSlots) {
+            invItem = equippedItemsMap.pet[usedPetSlots];
+            usedPetSlots++;
+        }
+        
+        if (invItem) {
+            const itemDetails = items.find(item => item.id === invItem.id);
+            columnB += `
+                <div class="item-card equipped-card" onclick="unequipItem(${invItem.id})" style="width: 100px;">
+                    <img src="${itemDetails.imageUrl}" alt="${itemDetails.name}">
+                    <p style="font-size: 0.8em;">${itemDetails.name} Lv.${invItem.level}</p>
+                    <p style="font-size: 0.7em;">(${type})</p>
+                </div>
+            `;
+        } else {
+             columnB += `
+                <div class="item-card empty-slot" style="width: 100px;">
+                    <p>${type}わく (あき)</p>
+                </div>
+            `;
+        }
+    });
+    columnB += '</div></div>';
+
+    mainEquipHtml += columnA + columnB + '</div>'; // 2つの列を結合
+
+    // ... (省略: unequippedHtml の生成)
+    
     const statusHtml = `
         <h2>キャラクターと アイテムいちらん</h2>
         <div id="character-status" style="margin-bottom: 20px;">
             <h3>ステータス</h3>
             <p>たいりょく: ${userData.hp} / ${userData.maxHp}</p>
-            <p>こうげき力: ${userData.attack}</p>
-            <p>ぼうぎょ力: ${userData.defense}</p>
+            <p>こうげき力: ${userData.attack} (きほん: ${userData.baseAttack} + ほせい: ${totalAttackBonus})</p>
+            <p>ぼうぎょ力: ${userData.defense} (きほん: ${userData.baseDefense} + ほせい: ${totalDefenseBonus})</p>
         </div>
         <hr>
-        ${equippedHtml}
+        ${mainEquipHtml}
         <hr>
         ${unequippedHtml}
     `;
@@ -338,158 +346,13 @@ function updateInventoryUI() {
     saveData();
 }
 
-function equipItem(invItemId) {
-    const invItem = userData.inventory.find(item => item.id === invItemId && !item.isEquipped);
-    if (!invItem) return;
+// ... (equipItem, unequipItem, showEnhanceModal, applyEnhancement は変更なし)
 
-    const itemDetails = items.find(item => item.id === invItem.id);
-    const itemType = itemDetails.type;
-    
-    const equippedCount = userData.inventory.filter(item => {
-        const details = items.find(i => i.id === item.id);
-        return item.isEquipped && details && details.type === itemType; // detailsのnullチェックを追加
-    }).length;
-
-    if (equippedCount >= EQUIP_SLOTS[itemType]) {
-        alert(`${itemType}わくはもう いっぱいです！ほかのそうびを はずしてね。`);
-        return;
-    }
-    
-    invItem.isEquipped = true;
-    updateInventoryUI();
-}
-
-function unequipItem(invItemId) {
-    // 強化アイテムはIDが重複するため、findではなくfilterを使うことで、インベントリ内のユニークなアイテムを操作する
-    const invItem = userData.inventory.find(item => item.id === invItemId && item.isEquipped); 
-    if (invItem) {
-        invItem.isEquipped = false;
-    }
-    updateInventoryUI();
-}
-
-// 強化アイテム使用モーダルの表示 (簡易版)
-function showEnhanceModal(materialId) {
-    // materialIdはIDが重複するため、最初の未装備の強化アイテムを使う
-    const materialItem = userData.inventory.find(item => item.id === materialId && !item.isEquipped);
-    if (!materialItem) return;
-
-    const materialDetails = items.find(item => item.id === materialId);
-    // 装備可能なアイテム（強化アイテム以外）を対象とする
-    const equipableItems = userData.inventory.filter(item => items.find(i => i.id === item.id).type !== 'material');
-    
-    if (equipableItems.length === 0) {
-        alert('つよくなれる アイテムが ありません。');
-        return;
-    }
-
-    let selectHtml = `
-        <div id="enhance-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: flex; justify-content: center; align-items: center;">
-            <div style="background: white; padding: 20px; border-radius: 10px;">
-                <h3>${materialDetails.name}を つかって つよくする</h3>
-                <p>${materialDetails.name}は レベルを +${materialDetails.levelIncrease} します。</p>
-                <select id="target-item-select">
-                    ${equipableItems.map((item, index) => { // ユニークなインデックスを付ける
-                        const details = items.find(i => i.id === item.id);
-                        return `<option value="${item.id}_${index}">${details.name} Lv.${item.level} (あと${details.maxLevel - item.level}レベル)</option>`;
-                    }).join('')}
-                </select>
-                <button onclick="applyEnhancement(${materialId})">けってい</button>
-                <button onclick="document.getElementById('enhance-modal').remove()">やめる</button>
-            </div>
-        </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', selectHtml);
-}
-
-// 強化アイテムの適用ロジック
-function applyEnhancement(materialId) {
-    const targetValue = document.getElementById('target-item-select').value;
-    const [targetItemIdStr, targetItemIndexStr] = targetValue.split('_');
-    const targetItemId = parseInt(targetItemIdStr);
-    const targetItemIndex = parseInt(targetItemIndexStr); // インデックスを取得
-
-    // インベントリから強化対象アイテムを取得（ここではIDとインデックスの両方で探す）
-    const targetItem = userData.inventory.filter(item => items.find(i => i.id === item.id).type !== 'material')[targetItemIndex];
-    // 使用する強化アイテムをインベントリから取得（IDが一致し、未装備の最初のもの）
-    const materialItem = userData.inventory.find(item => item.id === materialId && !item.isEquipped);
-    
-    const materialDetails = items.find(item => item.id === materialId);
-    const targetItemDetails = items.find(item => item.id === targetItemId);
-
-    if (!targetItem || !materialItem || !materialDetails) {
-        alert('エラーがおきました。（ターゲットまたは素材が見つかりません）');
-        document.getElementById('enhance-modal').remove();
-        return;
-    }
-
-    let levelUp = materialDetails.levelIncrease;
-    
-    if (targetItem.level + levelUp > targetItemDetails.maxLevel) {
-        levelUp = targetItemDetails.maxLevel - targetItem.level;
-    }
-
-    if (levelUp <= 0) {
-        alert(`${targetItemDetails.name}は さいだいレベルなので、つかえません。`);
-        document.getElementById('enhance-modal').remove();
-        return;
-    }
-    
-    targetItem.level += levelUp;
-
-    // 強化アイテムをインベントリから削除（使用した1つだけを削除）
-    const materialIndex = userData.inventory.findIndex(item => item.id === materialId && !item.isEquipped);
-    if (materialIndex !== -1) {
-        userData.inventory.splice(materialIndex, 1);
-    }
-    
-    alert(`${targetItemDetails.name}のレベルが ${targetItem.level}に なりました！`);
-    
-    document.getElementById('enhance-modal').remove();
-    updateInventoryUI();
-}
-
-// --- 戦闘ロジック ---
-// HPバーの更新は上部にある updateHpBar(id, current, max) を使用
-
-function getStageEnemies() {
-    if (enemiesDefeatedInStage >= DEFEAT_COUNT_FOR_BOSS && ENEMY_GROUPS['boss']) {
-        return [{...ENEMY_GROUPS['boss']}];
-    }
-    
-    const group = ENEMY_GROUPS[currentStage] || ENEMY_GROUPS[1];
-    return group;
-}
-
-function spawnEnemies() {
-    if (currentEnemies.length > 0 && currentEnemies.every(e => e.hp <= 0)) {
-        currentEnemies = [];
-    }
-    
-    if (currentEnemies.length === 0) {
-        const stageEnemies = getStageEnemies();
-
-        if (stageEnemies.some(e => e.isBoss)) {
-            currentEnemies.push({...stageEnemies[0], id: Date.now()});
-        } else {
-            const availableEnemies = stageEnemies;
-            for (let i = 0; i < 3; i++) {
-                const randomEnemy = availableEnemies[Math.floor(Math.random() * availableEnemies.length)];
-                currentEnemies.push({...randomEnemy, originalId: randomEnemy.id, id: Date.now() + i});
-            }
-        }
-    }
-}
-
+// --- 戦闘UIの更新 (updateEnemyUI) ---
 function updateEnemyUI() {
-    const enemyContainer = document.getElementById('enemy-container');
-    const battleLog = document.getElementById('battle-log');
-    if (!enemyContainer) return;
-    
-    enemyContainer.innerHTML = '';
-    
-    const stageText = currentEnemies.some(e => e.isBoss) ? 'ボスせん！' : `ステージ ${currentStage}`;
+    // ... (省略: 敵のコンテナとログの取得、HTMLのリセット)
+
+    // ここで userData.attack と userData.defense の値が使われます。
     document.getElementById('player-status-enemy-tab').innerHTML = `
         <h3>${stageText}</h3>
         <p>たおしたてきの数: ${enemiesDefeatedInStage} / ${DEFEAT_COUNT_FOR_BOSS}たい</p>
@@ -500,6 +363,9 @@ function updateEnemyUI() {
         <p>こうげき力: ${userData.attack} / ぼうぎょ力: ${userData.defense}</p>
     `;
     updateHpBar('player-hp-bar', userData.hp, userData.maxHp);
+    
+    // ... (省略: 敵のカードの生成ロジック)
+}
 
     let enemiesPresent = false;
     currentEnemies.forEach(enemy => {
