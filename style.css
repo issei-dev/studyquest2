@@ -75,13 +75,13 @@ h2, h3 {
     border-radius: 10px;
     padding: 15px;
     text-align: center;
-    width: 320px; /* 画像サイズに合わせて調整 */
+    width: 220px; /* 画像サイズ200px + パディング、ボーダーを考慮して調整 */
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     position: relative; /* 揺れるアニメーションのために必要 */
 }
 .enemy-card img {
-    width: 300px; /* 画像サイズ変更 */
-    height: 300px; /* 画像サイズ変更 */
+    width: 200px; /* 画像サイズ変更 */
+    height: 200px; /* 画像サイズ変更 */
     display: block; /* 画像の下の余白をなくす */
     margin: 0 auto 10px; /* 中央寄せ */
 }
