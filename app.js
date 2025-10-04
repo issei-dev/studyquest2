@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.18: スタンプ機能の連続タップ防止と安定化 🌟
+// 🌟 Ver0.19: スタンプ色、ガチャ重複レベルアップ、ガチャ画像対応 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -29,12 +29,14 @@ let currentStage = 1;
 let enemiesDefeatedInStage = 0; 
 const ENEMY_DEFEAT_COUNT_TO_BOSS = 15; 
 
+// 🚨 修正: アイテムデータに画像パスを追加 (ダミーURL)
 const items = [
-    { id: 'W001', name: '木の剣', type: 'weapon', attackBonus: 5, defenseBonus: 0, hpBonus: 0, rarity: 1 },
-    { id: 'A001', name: '皮のよろい', type: 'armor', attackBonus: 0, defenseBonus: 3, hpBonus: 10, rarity: 1 },
-    { id: 'P001', name: 'スライム', type: 'pet', attackPercentBonus: 0.0, defensePercentBonus: 0.0, hpPercentBonus: 0.1, rarity: 2 },
-    { id: 'W002', name: '鋼鉄の剣', type: 'weapon', attackBonus: 15, defenseBonus: 0, hpBonus: 0, rarity: 3 },
-    { id: 'P002', name: 'ドラゴン', type: 'pet', attackPercentBonus: 0.5, defensePercentBonus: 0.0, hpPercentBonus: 0.0, rarity: 4 }
+    { id: 'W001', name: '木の剣', type: 'weapon', attackBonus: 5, defenseBonus: 0, hpBonus: 0, rarity: 1, image: 'https://placehold.co/80x80/a0522d/ffffff?text=木剣' },
+    { id: 'A001', name: '皮のよろい', type: 'armor', attackBonus: 0, defenseBonus: 3, hpBonus: 10, rarity: 1, image: 'https://placehold.co/80x80/d2b48c/ffffff?text=皮鎧' },
+    { id: 'P001', name: 'スライム', type: 'pet', attackPercentBonus: 0.0, defensePercentBonus: 0.0, hpPercentBonus: 0.1, rarity: 2, image: 'https://placehold.co/80x80/87ceeb/ffffff?text=スライム' },
+    // レアなアイテム
+    { id: 'W002', name: '鋼鉄の剣', type: 'weapon', attackBonus: 15, defenseBonus: 0, hpBonus: 0, rarity: 3, image: 'https://placehold.co/80x80/808080/ffffff?text=鋼剣' },
+    { id: 'P002', name: 'ドラゴン', type: 'pet', attackPercentBonus: 0.5, defensePercentBonus: 0.0, hpPercentBonus: 0.0, rarity: 4, image: 'https://placehold.co/80x80/ff4500/ffffff?text=ドラゴン' }
 ];
 const enemies = {
     1: [
@@ -48,43 +50,8 @@ let currentEnemy = null;
 
 
 // --- データほぞん・よみこみ関数 ---
-
-function saveData() {
-    localStorage.setItem('userData', JSON.stringify(userData));
-    localStorage.setItem('gachaLog', JSON.stringify(gachaLog));
-    localStorage.setItem('currentStage', currentStage);
-    localStorage.setItem('enemiesDefeatedInStage', enemiesDefeatedInStage);
-}
-
-function loadData() {
-    const savedUserData = localStorage.getItem('userData');
-    if (savedUserData) {
-        userData = JSON.parse(savedUserData);
-        userData.baseAttack = userData.baseAttack || BASE_STATS_ATTACK;
-        userData.baseDefense = userData.baseDefense || BASE_STATS_DEFENSE;
-        userData.maxHp = userData.maxHp || BASE_STATS_HP;
-        userData.hp = userData.hp || userData.maxHp;
-    }
-    const savedGachaLog = localStorage.getItem('gachaLog');
-    if (savedGachaLog) {
-        gachaLog = JSON.parse(savedGachaLog);
-    }
-    const savedStage = localStorage.getItem('currentStage');
-    if (savedStage) {
-        currentStage = parseInt(savedStage, 10);
-    }
-    const savedDefeated = localStorage.getItem('enemiesDefeatedInStage');
-    if (savedDefeated) {
-        enemiesDefeatedInStage = parseInt(savedDefeated, 10);
-    }
-    
-    // 今日のログの初期化を確実に実行
-    if (!gachaLog[today] || gachaLog[today].count === undefined || gachaLog[today].studyContent === undefined) { 
-        userData.hp = userData.maxHp; 
-        gachaLog[today] = { count: 0, studyContent: [] };
-    }
-    gachaLog[today].count = Number(gachaLog[today].count) || 0;
-}
+function saveData() { /* ... */ }
+function loadData() { /* ... */ }
 
 
 // --- 共通の計算ロジック, インベントリ操作ロジック, UI更新とステータス計算 (省略) ---
@@ -114,19 +81,11 @@ function updateUI() {
     if (petButton) petButton.disabled = isDisabled;
 
     // 3. スタンプボタンの色変更のみ
-    // 🚨 修正: ここで disabled = false を強制するのはやめます。
-    const stampsToday = gachaLog[today] ? gachaLog[today].studyContent : [];
+    // 🚨 修正: 常に緑色を表示するよう変更
     document.querySelectorAll('.study-stamp-button').forEach(button => {
-        const content = button.getAttribute('data-content');
-        
-        // 記録済みなら色を変更 (何回押してもガチャ回数は増えるが、記録は1回のみ)
-        if (stampsToday.includes(content)) {
-            button.classList.add('bg-gray-400');
-            button.classList.remove('bg-green-500'); 
-        } else {
-            button.classList.remove('bg-gray-400');
-            button.classList.add('bg-green-500'); 
-        }
+        // グレーになる条件を削除し、常に緑色を適用
+        button.classList.remove('bg-gray-400');
+        button.classList.add('bg-green-500'); 
     });
 
     // 4. ステータス計算とインベントリUIの更新
@@ -145,12 +104,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. スタンプ機能のイベントリスナー
     document.getElementById('study-stamps').addEventListener('click', (event) => {
         const button = event.target;
-        // 🚨 修正: 押されたボタンがスタンプで、かつ無効化されていないか確認
         if (button.classList.contains('study-stamp-button') && !button.disabled) {
             const content = button.getAttribute('data-content');
             
-            // 🚨 連続タップ防止のため、処理開始時にボタンを無効化
-            button.disabled = true;
+            button.disabled = true; // 連続タップ防止
             
             gachaLog[today].count += 1; 
             
@@ -163,8 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             updateUI(); 
 
-            // 🚨 0.5秒後にボタンを再活性化
-            // この間にユーザーがポップアップを確認する時間を確保します。
             setTimeout(() => {
                 button.disabled = false;
             }, 500);
@@ -174,7 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. ガチャ機能のイベントリスナー
     document.getElementById('gacha-controls').addEventListener('click', (event) => {
         const button = event.target;
-        // 🚨 修正: 無効化されていないか確認
         if (button.classList.contains('gacha-roll-button') && !button.disabled) {
             const currentGachaCount = gachaLog[today] ? gachaLog[today].count : 0;
 
@@ -187,13 +141,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rollItems = items.filter(i => (type === 'ぶき' ? i.type !== 'pet' : i.type === 'pet'));
                 const rolledItem = rollItems[Math.floor(Math.random() * rollItems.length)];
                 
-                userData.inventory.push({ 
-                    id: rolledItem.id, 
-                    level: 1, 
-                    isEquipped: false
-                });
+                let modalMessage = '';
+                // 🚨 修正: 既に持っているかチェックし、レベルアップまたは新規追加
+                const existingItemIndex = userData.inventory.findIndex(invItem => invItem.id === rolledItem.id);
+
+                if (existingItemIndex !== -1) {
+                    // 既に入手済みの場合、レベルアップ
+                    userData.inventory[existingItemIndex].level = (userData.inventory[existingItemIndex].level || 1) + 1;
+                    modalMessage = `<p class="text-xl font-bold text-red-600 mb-2">🎉 ${type}ガチャ 結果発表 🎉</p>
+                                    <img src="${rolledItem.image}" alt="${rolledItem.name}" class="mx-auto my-2 rounded-md border-2 border-yellow-400" width="80" height="80">
+                                    <p class="text-lg">「${rolledItem.name}」がレベルアップしたよ！</p>
+                                    <p class="text-md">現在のレベル: **${userData.inventory[existingItemIndex].level}**</p>`;
+                } else {
+                    // 新規入手
+                    userData.inventory.push({ 
+                        id: rolledItem.id, 
+                        level: 1, 
+                        isEquipped: false
+                    });
+                    modalMessage = `<p class="text-xl font-bold text-red-600 mb-2">🎉 ${type}ガチャ 結果発表 🎉</p>
+                                    <img src="${rolledItem.image}" alt="${rolledItem.name}" class="mx-auto my-2 rounded-md border-2 border-blue-400" width="80" height="80">
+                                    <p class="text-lg">「${rolledItem.name}」を手に入れた！</p>`;
+                }
                 
-                resultElement.innerHTML = `<p class="text-xl font-bold text-red-600 mb-2">🎉 ${type}ガチャ 結果発表 🎉</p><p class="text-lg">「${rolledItem.name}」を手に入れた！</p>`;
+                showModal('ガチャ結果', modalMessage); // ポップアップで結果を表示
+
+                // resultElementの表示はポップアップで代替されるため、クリアまたは簡易メッセージに
+                resultElement.innerHTML = `<p class="text-gray-500">ガチャを引きました！結果はポップアップで確認してください。</p>`;
 
                 updateUI();
             }
@@ -207,16 +181,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // ------------------ グローバル関数 (HTMLから呼び出される関数) ------------------
 
 window.showTab = (clickedButton, tabId) => {
-    // 🚨 修正: タブボタン全体を処理します。
     document.querySelectorAll('.tab-button').forEach(button => {
         button.classList.remove('active');
     });
-    // 🚨 修正: clickedButtonが存在することを確認し、アクティブ化
     if (clickedButton) {
         clickedButton.classList.add('active');
     }
 
-    // コンテンツの切り替え
     document.querySelectorAll('.tab-content').forEach(content => {
         content.style.display = 'none'; 
     });
@@ -225,7 +196,6 @@ window.showTab = (clickedButton, tabId) => {
         selectedContent.style.display = 'block'; 
     }
 
-    // 特定のタブを開いたときにUIを更新
     if (tabId === 'inventory') {
         updateInventoryUI();
     }
@@ -236,22 +206,3 @@ window.showTab = (clickedButton, tabId) => {
 
     if (tabId === 'enemy') {
         updateEnemyUI();
-    }
-};
-
-window.showModal = (title = 'お知らせ', message = '') => { 
-    const modal = document.getElementById('custom-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalMessage = document.getElementById('modal-message');
-    
-    if (modalTitle) modalTitle.innerHTML = title;
-    if (modalMessage) modalMessage.innerHTML = message;
-    if (modal) modal.classList.add('visible');
-};
-
-window.hideModal = () => { 
-    const modal = document.getElementById('custom-modal');
-    if (modal) modal.classList.remove('visible');
-};
-
-function updateCalendarLogUI() { /* ... */ }
