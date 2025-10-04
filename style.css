@@ -1,8 +1,13 @@
+/*
+ * ======================================
+ * 🎨 クリーンなデザインのカスタムスタイル
+ * ======================================
+ */
 body {
     font-family: sans-serif;
     margin: 0;
     padding: 20px;
-    background-color: #f4f4f9;
+    background-color: #f4f4f9; /* 明るいグレーの背景 */
     color: #333;
     /* iOS/iPadOSのダブルタップ/ピンチアウトを無効化 */
     touch-action: manipulation;
@@ -10,7 +15,7 @@ body {
 }
 
 h1 {
-    color: #007bff;
+    color: #007bff; /* 青を基調とした色 */
     text-align: center;
 }
 
@@ -37,6 +42,15 @@ h1 {
     background-color: #dee2e6;
 }
 
+/* 🚨 修正: アクティブなタブボタンのスタイルを追加 */
+.tab-button.active {
+    background-color: #007bff; /* メインカラーを使用 */
+    color: white;
+    border-bottom: 2px solid #007bff; /* 下線を強調してタブが乗っているように見せる */
+    position: relative;
+    z-index: 10;
+}
+
 /* --- コンテンツ --- */
 .tab-content {
     display: none;
@@ -51,6 +65,35 @@ h1 {
 .tab-content.active {
     display: block;
 }
+
+/* --- スタンプ・ガチャボタン --- */
+.study-stamp-button {
+    background-color: #28a745; /* 緑色 */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+.study-stamp-button:disabled {
+    background-color: #ccc !important; /* 無効時はグレー */
+    cursor: not-allowed;
+}
+.gacha-roll-button {
+    background-color: #dc3545; /* 赤色 */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+.gacha-roll-button:disabled {
+    background-color: #ccc !important;
+    cursor: not-allowed;
+}
+
 
 /* --- HPバー --- */
 .hp-bar-container {
@@ -69,7 +112,7 @@ h1 {
     padding-right: 5px;
     color: white;
     transition: width 0.5s;
-    background-color: green; /* デフォルト */
+    background-color: #28a745; /* 緑色を使用 */
 }
 
 /* --- アイテムカード --- */
@@ -109,9 +152,9 @@ h1 {
 }
 
 .equipped-card {
-    border: 2px solid #ffcc00; /* 装備中を強調 */
+    border: 2px solid #ffc107; /* 装備中を黄色で強調 */
     cursor: pointer;
-    background-color: #fffbe6;
+    background-color: #fff8e1;
 }
 
 .empty-slot {
@@ -125,13 +168,13 @@ h1 {
 
 /* --- 敵カード --- */
 .enemy-card {
-    border: 2px solid #cc0000;
+    border: 2px solid #dc3545; /* 赤色 */
     padding: 15px;
     width: 150px;
     text-align: center;
     border-radius: 8px;
     box-shadow: 3px 3px 8px rgba(0,0,0,0.2);
-    background-color: #ffe6e6;
+    background-color: #fff0f0;
 }
 
 .enemy-card img {
