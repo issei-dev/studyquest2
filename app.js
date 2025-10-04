@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.17: スタンプボタンとタブ切り替えの動作保証 🌟
+// 🌟 Ver0.18: スタンプ機能の連続タップ防止と安定化 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -88,10 +88,10 @@ function loadData() {
 
 
 // --- 共通の計算ロジック, インベントリ操作ロジック, UI更新とステータス計算 (省略) ---
-function calculateWeaponArmorBonus(baseBonus, level) { /* ... */ return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1)); }
-function calculatePetPercentBonus(basePercent, level) { /* ... */ return basePercent + (level - 1) * PET_GROWTH_RATE; }
-window.toggleEquipItem = (itemIndex) => { /* ... */ updateUI(); };
-window.enhanceItem = (itemIndex) => { /* ... */ updateUI(); };
+function calculateWeaponArmorBonus(baseBonus, level) { return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1)); }
+function calculatePetPercentBonus(basePercent, level) { return basePercent + (level - 1) * PET_GROWTH_RATE; }
+window.toggleEquipItem = (itemIndex) => { updateUI(); };
+window.enhanceItem = (itemIndex) => { updateUI(); };
 function updateInventoryUI() { /* ... */ }
 function selectEnemy() { /* ... */ }
 function updateEnemyHPBar(enemy, container) { /* ... */ }
@@ -113,14 +113,13 @@ function updateUI() {
     if (weaponButton) weaponButton.disabled = isDisabled;
     if (petButton) petButton.disabled = isDisabled;
 
-    // 3. スタンプボタンの有効/無効化
-    // 🚨 修正: スタンプボタンは常に有効（disabled=false）にし、
-    // 記録済みのものは色だけ変更するようにします。
+    // 3. スタンプボタンの色変更のみ
+    // 🚨 修正: ここで disabled = false を強制するのはやめます。
     const stampsToday = gachaLog[today] ? gachaLog[today].studyContent : [];
     document.querySelectorAll('.study-stamp-button').forEach(button => {
         const content = button.getAttribute('data-content');
         
-        // 記録済みなら色を変更
+        // 記録済みなら色を変更 (何回押してもガチャ回数は増えるが、記録は1回のみ)
         if (stampsToday.includes(content)) {
             button.classList.add('bg-gray-400');
             button.classList.remove('bg-green-500'); 
@@ -128,9 +127,6 @@ function updateUI() {
             button.classList.remove('bg-gray-400');
             button.classList.add('bg-green-500'); 
         }
-        
-        // 🚨 ここでボタンを強制的に活性化します
-        button.disabled = false;
     });
 
     // 4. ステータス計算とインベントリUIの更新
@@ -144,18 +140,21 @@ function updateUI() {
 // --- イベントハンドラーとメインロジック ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. データロード
     loadData();
 
     // 2. スタンプ機能のイベントリスナー
     document.getElementById('study-stamps').addEventListener('click', (event) => {
         const button = event.target;
-        // 🚨 修正: ここでbutton.disabledをチェックする必要はないが、コード構造として維持
-        if (button.classList.contains('study-stamp-button')) {
+        // 🚨 修正: 押されたボタンがスタンプで、かつ無効化されていないか確認
+        if (button.classList.contains('study-stamp-button') && !button.disabled) {
             const content = button.getAttribute('data-content');
+            
+            // 🚨 連続タップ防止のため、処理開始時にボタンを無効化
+            button.disabled = true;
             
             gachaLog[today].count += 1; 
             
+            // 記録はコンテンツ種類ごとに1日1回のみ（ログ表示のため）
             if (!gachaLog[today].studyContent.includes(content)) {
                 gachaLog[today].studyContent.push(content); 
             }
@@ -163,13 +162,19 @@ document.addEventListener('DOMContentLoaded', () => {
             showModal('スタンプゲット！', `今日もがんばったね！<br>ガチャ回数が **1回** 増えたよ！`);
             
             updateUI(); 
+
+            // 🚨 0.5秒後にボタンを再活性化
+            // この間にユーザーがポップアップを確認する時間を確保します。
+            setTimeout(() => {
+                button.disabled = false;
+            }, 500);
         }
     });
 
     // 3. ガチャ機能のイベントリスナー
     document.getElementById('gacha-controls').addEventListener('click', (event) => {
         const button = event.target;
-        // 🚨 修正: 確実にgacha-roll-buttonクラスとdisabled状態を確認
+        // 🚨 修正: 無効化されていないか確認
         if (button.classList.contains('gacha-roll-button') && !button.disabled) {
             const currentGachaCount = gachaLog[today] ? gachaLog[today].count : 0;
 
@@ -195,20 +200,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 4. 初回UI更新
     updateUI(); 
 });
 
 
 // ------------------ グローバル関数 (HTMLから呼び出される関数) ------------------
 
-// 🚨 修正: windowにアタッチして、HTMLから確実に呼び出せるようにします。
 window.showTab = (clickedButton, tabId) => {
-    // アクティブなボタンの切り替え
+    // 🚨 修正: タブボタン全体を処理します。
     document.querySelectorAll('.tab-button').forEach(button => {
         button.classList.remove('active');
     });
-    // 🚨 修正: clickedButtonが存在することを確認
+    // 🚨 修正: clickedButtonが存在することを確認し、アクティブ化
     if (clickedButton) {
         clickedButton.classList.add('active');
     }
