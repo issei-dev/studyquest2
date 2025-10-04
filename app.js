@@ -1,16 +1,16 @@
 // --- 初期データと変数 ---
 const today = new Date().toISOString().slice(0, 10);
-const MAX_GACHA_COUNT = 5;
+const MAX_GACHA_COUNT = 5; // スタンプ回数の上限
 const BASE_STATS_HP = 100;
 const ENHANCEMENT_RATE = 1.2; // レベルアップ時のステータス成長率
 
 let userData = {
     hp: BASE_STATS_HP,
     maxHp: BASE_STATS_HP,
-    baseAttack: 10,  // 基本ステータス
-    baseDefense: 5,  // 基本ステータス
-    attack: 10,      // 装備込みの現在のステータス
-    defense: 5,      // 装備込みの現在のステータス
+    baseAttack: 10,
+    baseDefense: 5,
+    attack: 10,
+    defense: 5,
     inventory: [] // { id: 1, level: 1, isEquipped: false } 形式
 };
 
@@ -22,25 +22,30 @@ let gachaLog = {};
 let currentEnemies = [];
 
 // --- アイテムデータ ---
+// ★修正: レアリティ名を新しい確率に合わせるため変更 (N, R, SR, UR, LE)
 const items = [
     // 武器 (weapon): 2枠
     { id: 1, name: 'きのつるぎ', type: 'weapon', rarity: 'N', attackBonus: 5, defenseBonus: 1, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=きのつるぎ' },
     { id: 4, name: 'てつのつるぎ', type: 'weapon', rarity: 'R', attackBonus: 10, defenseBonus: 2, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=てつのつるぎ' },
     { id: 6, name: 'ほのおのつるぎ', type: 'weapon', rarity: 'SR', attackBonus: 25, defenseBonus: 5, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=ほのおのつるぎ' },
+    { id: 13, name: 'でんせつのけん', type: 'weapon', rarity: 'UR', attackBonus: 50, defenseBonus: 10, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=URつるぎ' },
+    { id: 14, name: 'きぼうのひかり', type: 'weapon', rarity: 'LE', attackBonus: 100, defenseBonus: 20, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=LEつるぎ' },
     // 防具 (armor): 1枠
     { id: 2, name: 'いしのたて', type: 'armor', rarity: 'N', attackBonus: 1, defenseBonus: 3, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=いしのたて' },
     { id: 5, name: 'かわのよろい', type: 'armor', rarity: 'R', attackBonus: 2, defenseBonus: 7, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=かわのよろい' },
-    { id: 7, name: 'ドラゴンのたて', type: 'armor', rarity: 'SSR', attackBonus: 0, defenseBonus: 30, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=ドラゴンのたて' },
+    { id: 7, name: 'ドラゴンのたて', type: 'armor', rarity: 'SR', attackBonus: 0, defenseBonus: 30, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=ドラゴンのたて' },
     // ペット (pet): 3枠
     { id: 3, name: 'スライム', type: 'pet', rarity: 'N', attackBonus: 2, defenseBonus: 2, hpBonus: 5, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=スライム' },
     { id: 8, name: 'こいぬ', type: 'pet', rarity: 'R', attackBonus: 5, defenseBonus: 3, hpBonus: 10, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=こいぬ' },
     { id: 9, name: 'ねこ', type: 'pet', rarity: 'R', attackBonus: 3, defenseBonus: 5, hpBonus: 10, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=ねこ' },
+    { id: 15, name: 'フェニックス', type: 'pet', rarity: 'UR', attackBonus: 15, defenseBonus: 15, hpBonus: 30, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=URペット' },
+    { id: 16, name: 'ユニコーン', type: 'pet', rarity: 'LE', attackBonus: 10, defenseBonus: 20, hpBonus: 50, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=LEペット' },
     
     // 強化アイテム (material)
     { id: 100, name: 'きょうかのかけら（小）', type: 'material', rarity: 'N', levelIncrease: 1, imageUrl: 'https://placehold.jp/200x200.png?text=かけら小' },
     { id: 101, name: 'きょうかのかけら（中）', type: 'material', rarity: 'R', levelIncrease: 2, imageUrl: 'https://placehold.jp/200x200.png?text=かけら中' },
     { id: 102, name: 'きょうかのかけら（大）', type: 'material', rarity: 'SR', levelIncrease: 3, imageUrl: 'https://placehold.jp/200x200.png?text=かけら大' },
-    { id: 103, name: 'きょうかのかたまり（小）', type: 'material', rarity: 'SSR', levelIncrease: 4, imageUrl: 'https://placehold.jp/200x200.png?text=かたまり小' },
+    { id: 103, name: 'きょうかのかたまり（小）', type: 'material', rarity: 'UR', levelIncrease: 4, imageUrl: 'https://placehold.jp/200x200.png?text=かたまり小' },
 ];
 
 // 装備枠の定義
@@ -80,7 +85,7 @@ const DROP_RATES = {
 };
 
 
-// --- データほぞん・よみこみ関数 (省略) ---
+// --- データほぞん・よみこみ関数 ---
 function saveData() {
     localStorage.setItem('userData', JSON.stringify(userData));
     localStorage.setItem('gachaLog', JSON.stringify(gachaLog));
@@ -106,7 +111,6 @@ function loadData() {
         enemiesDefeatedInStage = parseInt(savedDefeated, 10);
     }
     
-    // 日付が変わったらHPを全回復し、ガチャ回数をリセット
     if (!gachaLog[today]) {
         userData.hp = userData.maxHp; 
         gachaLog[today] = { count: 0, studyContent: [] };
@@ -122,7 +126,7 @@ function updateHpBar(elementId, currentHp, maxHp) {
     bar.style.backgroundColor = percentage > 50 ? 'green' : (percentage > 20 ? 'orange' : 'red');
 }
 
-// --- UIそうさ関数 (タブ切り替え) (省略) ---
+// --- UIそうさ関数 (タブ切り替え) ---
 function showTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
@@ -141,27 +145,98 @@ function showTab(tabId) {
     }
 }
 
-// --- ガチャロジック (省略) ---
-function updateGachaUI() {
-    const dailyLog = gachaLog[today] || { count: 0, studyContent: [] };
-    const remaining = MAX_GACHA_COUNT - dailyLog.count;
-    document.getElementById('gacha-count').textContent = remaining;
-    
-    const form = document.getElementById('gacha-form');
-    if (!form) return;
+// --- スタンプ・ポップアップ機能 ---
 
-    if (remaining <= 0) {
-        form.querySelector('button[type="submit"]').disabled = true;
-        form.querySelector('textarea').disabled = true;
+/**
+ * スタンプを押した後のポップアップ表示
+ * @param {string} message - ポップアップに表示するメッセージ
+ * @param {function} onOk - OKボタンを押した後の処理
+ */
+function showStampPopup(message, onOk) {
+    let popupHtml = `
+        <div id="stamp-popup" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; display: flex; justify-content: center; align-items: center;">
+            <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 80%;">
+                <h3>${message}</h3>
+                <button id="popup-ok-button" style="padding: 10px 20px; margin-top: 20px;">OK</button>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', popupHtml);
+    
+    document.getElementById('popup-ok-button').onclick = () => {
+        document.getElementById('stamp-popup').remove();
+        if (onOk) onOk();
+    };
+}
+
+/**
+ * 「そのほか」ボタンを押した際のテキスト入力付きポップアップ
+ */
+function showOtherStampPopup() {
+    let inputPopupHtml = `
+        <div id="stamp-input-popup" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; display: flex; justify-content: center; align-items: center;">
+            <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 80%;">
+                <h3>何を勉強しましたか？</h3>
+                <input type="text" id="study-input" placeholder="例: 漢字練習" style="width: 80%; padding: 10px; margin: 10px 0;">
+                <div style="margin-top: 10px;">
+                    <button id="input-ok-button" style="padding: 10px 20px;">OK</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', inputPopupHtml);
+    
+    document.getElementById('input-ok-button').onclick = () => {
+        const content = document.getElementById('study-input').value || 'そのほか';
+        document.getElementById('stamp-input-popup').remove();
+        
+        // ログに記録してから、成功ポップアップを表示
+        handleStudyStamp(content, true);
+    };
+}
+
+/**
+ * 勉強スタンプが押されたときのメイン処理
+ * @param {string} content - 勉強内容
+ * @param {boolean} isManual - 手動入力かどうか
+ */
+function handleStudyStamp(content, isManual = false) {
+    if (gachaLog[today].count >= MAX_GACHA_COUNT) {
+        showStampPopup('きょうのスタンプは じょうげんに たっしました。', updateGachaUI);
+        return;
+    }
+
+    gachaLog[today].count++;
+    gachaLog[today].studyContent.push(content);
+    saveData();
+    
+    // 手動入力でなければ、すぐに成功ポップアップを表示
+    if (!isManual) {
+        showStampPopup('きょうもがんばったね！', updateGachaUI);
     } else {
-        form.querySelector('button[type="submit"]').disabled = false;
-        form.querySelector('textarea').disabled = false;
+        // 手動入力の場合は入力後にこの関数が呼ばれるため、成功ポップアップのみ表示
+        showStampPopup('きょうもがんばったね！', updateGachaUI);
     }
 }
 
-function rollGacha(itemPool) {
-    const rarities = ['SSR', 'SR', 'R', 'N'];
-    const weights = [1, 5, 20, 74];
+// --- ガチャロジック ---
+function updateGachaUI() {
+    const dailyLog = gachaLog[today] || { count: 0, studyContent: [] };
+    const remaining = dailyLog.count;
+    document.getElementById('gacha-count').textContent = remaining;
+    
+    const gachaButtons = document.querySelectorAll('.gacha-roll-button');
+    gachaButtons.forEach(button => {
+        button.disabled = remaining <= 0;
+    });
+}
+
+function rollGacha(itemType) {
+    // ★修正: 新しい確率 (UR, LEを含む)
+    const rarities = ['LE', 'UR', 'SR', 'R', 'N'];
+    const weights = [1, 4, 15, 30, 50]; // 合計100
     
     let totalWeight = weights.reduce((sum, w) => sum + w, 0);
     let rand = Math.floor(Math.random() * totalWeight);
@@ -174,49 +249,95 @@ function rollGacha(itemPool) {
         }
         rand -= weights[i];
     }
-    
-    const filteredItems = itemPool.filter(item => item.rarity === selectedRarity);
+
+    // ★修正: 最大レベルのアイテムを除外したプールを作成
+    const availableItemsPool = items.filter(item => {
+        if (item.type !== itemType) return false;
+        
+        const existingItem = userData.inventory.find(invItem => invItem.id === item.id);
+        
+        // アイテムをまだ持っていない、または最大レベルに達していない
+        return !existingItem || existingItem.level < item.maxLevel;
+    });
+
+    if (availableItemsPool.length === 0) {
+        // 全てのアイテムが最大レベルの場合
+        return { name: `${TYPE_NAMES[itemType]}ガチャ`, rarity: 'None', message: '全てのアイテムが最大レベルです！' };
+    }
+
+    // 選択されたレアリティのアイテムをプールから抽出
+    let filteredItems = availableItemsPool.filter(item => item.rarity === selectedRarity);
+
+    // もし選択されたレアリティのアイテムが全て最大レベルで排出プールから消えていた場合、
+    // ランダムに他のレアリティから選出（本来ならあり得ないが安全策）
     if (filteredItems.length === 0) {
-        return rollGacha(items.filter(item => item.type === 'weapon' || item.type === 'pet'));
+        // 残っているアイテム全てからランダムに選ぶ
+        filteredItems = availableItemsPool;
     }
     
-    return filteredItems[Math.floor(Math.random() * filteredItems.length)];
+    const pulledItem = filteredItems[Math.floor(Math.random() * filteredItems.length)];
+    return pulledItem;
 }
 
+function processGachaRoll(itemType) {
+    if (gachaLog[today].count <= 0) {
+        document.getElementById('gacha-result').textContent = 'スタンプが たりません。';
+        return;
+    }
+    
+    gachaLog[today].count--;
+    
+    const pulledItem = rollGacha(itemType);
 
-// --- インベントリーロジック (装備枠と強化機能の追加) ---
+    let message = '';
+    let resultHtml = '';
 
-/**
- * アイテムのレベルに応じたボーナス値を計算します。
- * レベル1はベースボーナス、レベル2以降はベースボーナス * ENHANCEMENT_RATE^(レベル-1) で増加します。
- * @param {number} baseBonus - アイテムの基本ボーナス値
- * @param {number} level - 現在のレベル
- * @returns {number} 計算された合計ボーナス値
- */
+    if (pulledItem.message && pulledItem.rarity === 'None') {
+        // 全アイテム最大レベルの場合
+        message = pulledItem.message;
+        resultHtml = `<p>結果: ${message}</p>`;
+    } else {
+        const existingItem = userData.inventory.find(invItem => invItem.id === pulledItem.id);
+
+        if (existingItem) {
+            // ★修正: 重複してもレベルを上げる (最大レベルチェックはrollGachaで済んでいる)
+            existingItem.level++;
+            message = `${pulledItem.name}を じゅうふくして にゅうしゅしました！レベルが${existingItem.level}に あがりました！`;
+        } else {
+            const newItem = { id: pulledItem.id, level: 1, isEquipped: false };
+            userData.inventory.push(newItem);
+            message = `${pulledItem.name}を あたらしく てにいれました！`;
+        }
+
+        resultHtml = `
+            <p>${message}</p>
+            <div class="item-card">
+                <img src="${pulledItem.imageUrl}" alt="${pulledItem.name}">
+                <p>${pulledItem.name} (${pulledItem.rarity})</p>
+            </div>
+        `;
+    }
+    
+    document.getElementById('gacha-result').innerHTML = resultHtml;
+
+    // 装備ステータスが変わる可能性があるので更新
+    updateInventoryUI();
+    updateGachaUI();
+    saveData();
+}
+
+// --- インベントリーロジック (省略) ---
 function calculateBonus(baseBonus, level) {
     if (level <= 1) {
         return baseBonus;
     }
-    // レベル1 (ベース) + レベル2以降の成長を合計
-    // (レベル1のボーナス) + (レベル2で 1.2倍 * ベース) + ... のようにしたいが、
-    // ここでは単純に (レベルに応じた倍率) * ベースボーナスを返す
-    // 問題文に合わせて「レベルが一つ上がるごとに各ステータスが1.2倍ずつ増加」を適用します。
-    // レベル L の時のボーナス値 = baseBonus * (ENHANCEMENT_RATE ^ (L-1))
-    // 総合ボーナス = baseBonus + baseBonus * ENHANCEMENT_RATE + ...
     
-    // シンプルに、レベル1では baseBonus、レベル L では baseBonus * (1 + (L-1)*0.2) のような線形成長と解釈するか、
-    // baseBonus * 1.2^(L-1) の指数成長と解釈するか。今回はよりRPG的な**指数成長**を採用します。
-    
-    // レベル1のボーナスはそのまま
     let totalBonus = baseBonus;
     
-    // レベル2以降の増加分
     for (let i = 2; i <= level; i++) {
-        // 現在のボーナス値に1.2倍を乗算
         totalBonus *= ENHANCEMENT_RATE;
     }
     
-    // 常に整数として表示・利用するため、小数点以下を四捨五入します。
     return Math.round(totalBonus); 
 }
 
@@ -225,7 +346,6 @@ function updateInventoryUI() {
     const invDiv = document.getElementById('inventory');
     if (!invDiv) return;
 
-    // 装備ステータスの再計算
     let totalAttackBonus = 0;
     let totalDefenseBonus = 0;
     let totalHpBonus = 0;
@@ -237,7 +357,6 @@ function updateInventoryUI() {
         const itemDetails = items.find(item => item.id === invItem.id);
         if (!itemDetails) return;
         
-        // ★修正: レベルアップ時のボーナス計算ロジックを適用
         const attackBoost = calculateBonus(itemDetails.attackBonus, invItem.level);
         const defenseBoost = calculateBonus(itemDetails.defenseBonus, invItem.level);
         const hpBoost = calculateBonus(itemDetails.hpBonus, invItem.level);
@@ -252,7 +371,6 @@ function updateInventoryUI() {
         equippedItemsMap[itemDetails.type].push(invItem);
     });
 
-    // ★修正: ステータスの更新 (NaNを防ぐためにNumber()でキャスト)
     userData.attack = Number(userData.baseAttack) + Number(totalAttackBonus);
     userData.defense = Number(userData.baseDefense) + Number(totalDefenseBonus);
     userData.maxHp = Number(BASE_STATS_HP) + Number(totalHpBonus); 
@@ -260,11 +378,8 @@ function updateInventoryUI() {
         userData.hp = userData.maxHp;
     }
 
-
-    // --- 装備スロットのHTML生成ロジック ---
     let mainEquipHtml = '<div style="display: flex; gap: 20px;">'; 
 
-    // A. ぶき (2枠) と ぼうぐ (1枠) の列
     let columnA = '<div><h3>ぶき、ぼうぐ</h3><div class="item-list" style="display: flex; flex-wrap: wrap; width: 320px;">';
     const slotOrderA = ['weapon', 'weapon', 'armor'];
     let usedWeaponSlots = 0;
@@ -280,7 +395,7 @@ function updateInventoryUI() {
             usedArmorSlots++;
         }
 
-        const typeName = TYPE_NAMES[type] || type; // ★修正: 日本語名を使用
+        const typeName = TYPE_NAMES[type] || type; 
         if (invItem) {
             const itemDetails = items.find(item => item.id === invItem.id);
             columnA += `
@@ -301,7 +416,6 @@ function updateInventoryUI() {
     columnA += '</div></div>';
 
 
-    // B. ペット (3枠) の列
     let columnB = '<div><h3>ペット</h3><div class="item-list" style="display: flex; flex-wrap: wrap; width: 320px;">';
     const slotOrderB = ['pet', 'pet', 'pet'];
     let usedPetSlots = 0;
@@ -313,7 +427,7 @@ function updateInventoryUI() {
             usedPetSlots++;
         }
         
-        const typeName = TYPE_NAMES[type] || type; // ★修正: 日本語名を使用
+        const typeName = TYPE_NAMES[type] || type; 
         if (invItem) {
             const itemDetails = items.find(item => item.id === invItem.id);
             columnB += `
@@ -335,7 +449,6 @@ function updateInventoryUI() {
 
     mainEquipHtml += columnA + columnB + '</div>'; 
 
-    // もちもの（未装備アイテム）のHTMLを生成
     let unequippedHtml = '<h3>もちもの</h3><div class="item-list">';
     const unequippedItems = userData.inventory.filter(item => !item.isEquipped).sort((a, b) => a.id - b.id);
     
@@ -351,7 +464,7 @@ function updateInventoryUI() {
             actions += `<button onclick="equipItem(${invItem.id})">そうびする</button>`;
         }
         if (isMaterial) {
-            actions += `<button onclick="showEnhanceModal(${invItem.id})">きょうかする</button>`; // ★修正: ボタン名を変更
+            actions += `<button onclick="showEnhanceModal(${invItem.id})">きょうかする</button>`;
         }
         
         const levelDisplay = !isMaterial ? `Lv.${invItem.level}` : '';
@@ -366,7 +479,6 @@ function updateInventoryUI() {
     });
     unequippedHtml += '</div>';
 
-    // キャラクターとアイテム一覧のHTML
     const statusHtml = `
         <h2>キャラクターと アイテムいちらん</h2>
         <div id="character-status" style="margin-bottom: 20px;">
@@ -416,16 +528,15 @@ function unequipItem(invItemId) {
     updateEnemyUI(); 
 }
 
-// 強化アイテム使用モーダルの表示 (簡易版) (省略)
 function showEnhanceModal(materialId) {
     const materialItem = userData.inventory.find(item => item.id === materialId && !item.isEquipped);
     if (!materialItem) return;
 
     const materialDetails = items.find(item => item.id === materialId);
-    const equipableItems = userData.inventory.filter(item => items.find(i => i.id === item.id).type !== 'material' && item.level < items.find(i => i.id === item.id).maxLevel); // 最大レベルでないもののみ
+    const equipableItems = userData.inventory.filter(item => items.find(i => i.id === item.id).type !== 'material' && item.level < items.find(i => i.id === item.id).maxLevel); 
     
     if (equipableItems.length === 0) {
-        alert('つよくなれる アイテムが ありません。');
+        alert('つよくできる アイテムが ありません。');
         return;
     }
 
@@ -449,7 +560,6 @@ function showEnhanceModal(materialId) {
     document.body.insertAdjacentHTML('beforeend', selectHtml);
 }
 
-// 強化アイテムの適用ロジック (省略)
 function applyEnhancement(materialId) {
     const targetValue = document.getElementById('target-item-select').value;
     const [targetItemIdStr, targetItemIndexStr] = targetValue.split('_');
@@ -600,7 +710,6 @@ async function attackEnemy(enemyId) {
         return;
     }
 
-    // --- 1. 自分の攻撃 ---
     const damageToEnemy = calculateDamage(userData.attack, enemy.defense);
     enemy.hp -= damageToEnemy;
     battleLog.textContent = `じぶんは ${enemy.name}に ${damageToEnemy}のダメージ！`;
@@ -613,14 +722,12 @@ async function attackEnemy(enemyId) {
     }
     updateHpBar(`enemy-hp-bar-${enemy.id}`, enemy.hp, enemy.maxHp);
     
-    // 敵を倒したかチェック
     if (enemy.hp <= 0) {
         battleLog.textContent += ` ${enemy.name}をたおした！`;
         if (!enemy.isBoss) {
             enemiesDefeatedInStage++;
         }
         
-        // --- 倒した際のドロップアイテム処理 ---
         const dropItemId = rollDropItem(enemy.category);
         if (dropItemId) {
             const dropItemDetails = items.find(i => i.id === dropItemId);
@@ -641,7 +748,6 @@ async function attackEnemy(enemyId) {
     
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    // --- 2. モンスターの反撃（残っている敵全員） ---
     const activeEnemies = currentEnemies.filter(e => e.hp > 0).sort((a, b) => a.id - b.id);
     
     for (const activeEnemy of activeEnemies) {
@@ -664,7 +770,6 @@ async function attackEnemy(enemyId) {
         }
     }
     
-    // 最終チェックとUI更新
     if (userData.hp <= 0) {
         userData.hp = 0;
         battleLog.textContent = ' あなたはたおれてしまった...';
@@ -676,7 +781,6 @@ async function attackEnemy(enemyId) {
     updateEnemyUI();
 }
 
-// 戦闘終了時の処理 (省略)
 function handleBattleEnd() {
     const battleLog = document.getElementById('battle-log');
     if (!battleLog) return;
@@ -715,9 +819,9 @@ function updateCalendarUI() {
     
     sortedDates.forEach(date => {
         const log = gachaLog[date];
-        const item = document.createElement('li');
+        const count = log.count || 0;
         const studyContent = log.studyContent.length > 0 ? log.studyContent.join(', ') : 'きろくなし';
-        item.textContent = `${date}: ${studyContent}`;
+        item.textContent = `${date}: スタンプ${count}こ, きろく: ${studyContent}`; // スタンプ回数も表示
         logList.appendChild(item);
     });
 }
@@ -726,57 +830,33 @@ function updateCalendarUI() {
 window.onload = () => {
     loadData();
     updateInventoryUI(); 
-    
-    // ★★★ ガチャフォームのイベントリスナー設定をここに統合 ★★★
-    const gachaForm = document.getElementById('gacha-form');
-    if (gachaForm) {
-        gachaForm.addEventListener('submit', (e) => {
+
+    // ★修正: iOS/iPadOSのダブルタップによるピンチアウトを無効化
+    document.addEventListener('touchend', (e) => {
+        if (e.detail === 2) { // 連続したタップが2回
             e.preventDefault();
-            
-            const studyContent = document.getElementById('study-content').value;
-            const gachaType = document.getElementById('gacha-type').value;
-            
-            if (gachaLog[today].count >= MAX_GACHA_COUNT) {
-                document.getElementById('gacha-result').textContent = 'きょうのガチャの かいすうじょうげんに たっしました。';
-                return;
-            }
-            
-            gachaLog[today].count++;
-            gachaLog[today].studyContent.push(studyContent);
-            
-            const itemPool = items.filter(item => item.type === gachaType);
-            const pulledItem = rollGacha(itemPool);
-
-            let message = '';
-            const existingItem = userData.inventory.find(invItem => invItem.id === pulledItem.id);
-
-            if (existingItem) {
-                if (existingItem.level < pulledItem.maxLevel) {
-                    existingItem.level++;
-                    message = `${pulledItem.name}を じゅうふくして にゅうしゅしました！レベルが${existingItem.level}に あがりました！`;
-                } else {
-                    message = `${pulledItem.name}を じゅうふくして にゅうしゅしましたが、すでに さいだいレベルです。`;
-                }
-            } else {
-                const newItem = { id: pulledItem.id, level: 1, isEquipped: false };
-                userData.inventory.push(newItem);
-                message = `${pulledItem.name}を あたらしく てにいれました！`;
-            }
-
-            document.getElementById('gacha-result').innerHTML = `
-                <p>${message}</p>
-                <div class="item-card">
-                    <img src="${pulledItem.imageUrl}" alt="${pulledItem.name}">
-                    <p>${pulledItem.name} (${pulledItem.rarity})</p>
-                </div>
-            `;
-
-            document.getElementById('study-content').value = '';
-            updateGachaUI();
-            saveData();
-        });
+        }
+    }, { passive: false });
+    
+    // ★修正: ガチャボタンのイベントリスナー設定
+    const weaponGachaButton = document.getElementById('gacha-roll-weapon');
+    if (weaponGachaButton) {
+        weaponGachaButton.onclick = () => processGachaRoll('weapon');
     }
-    // ★★★ 統合終了 ★★★
+    const petGachaButton = document.getElementById('gacha-roll-pet');
+    if (petGachaButton) {
+        petGachaButton.onclick = () => processGachaRoll('pet');
+    }
+
+    // ★修正: スタンプボタンのイベントリスナー設定
+    document.querySelectorAll('.study-stamp-button').forEach(button => {
+        const content = button.getAttribute('data-content');
+        if (content === 'そのほか') {
+            button.onclick = showOtherStampPopup;
+        } else {
+            button.onclick = () => handleStudyStamp(content);
+        }
+    });
     
     showTab('gacha'); 
 };
