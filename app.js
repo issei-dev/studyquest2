@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.15: ポップアップメッセージの修正 🌟
+// 🌟 Ver0.16: ロジック最終調整と安定化 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -22,7 +22,7 @@ let userData = {
     inventory: [] 
 };
 
-// 日別スタンプ記録とガチャ回数
+// 日別スタンプ記録とガチャ回数 (countは利用可能回数)
 let gachaLog = {}; 
 
 // --- 戦闘関連データ ---
@@ -48,27 +48,100 @@ const enemies = {
 let currentEnemy = null;
 
 
-// --- データほぞん・よみこみ関数 (変更なし) ---
-function saveData() { /* ... 変更なし ... */ }
-function loadData() { 
-    // ... gachaLog[today] の初期化ロジックは変更なし ...
+// --- データほぞん・よみこみ関数 ---
+
+function saveData() {
+    localStorage.setItem('userData', JSON.stringify(userData));
+    localStorage.setItem('gachaLog', JSON.stringify(gachaLog));
+    localStorage.setItem('currentStage', currentStage);
+    localStorage.setItem('enemiesDefeatedInStage', enemiesDefeatedInStage);
+    console.log("Data saved to LocalStorage.");
+}
+
+function loadData() {
+    const savedUserData = localStorage.getItem('userData');
+    if (savedUserData) {
+        userData = JSON.parse(savedUserData);
+        userData.baseAttack = userData.baseAttack || BASE_STATS_ATTACK;
+        userData.baseDefense = userData.baseDefense || BASE_STATS_DEFENSE;
+        userData.maxHp = userData.maxHp || BASE_STATS_HP;
+        userData.hp = userData.hp || userData.maxHp;
+    }
+    const savedGachaLog = localStorage.getItem('gachaLog');
+    if (savedGachaLog) {
+        gachaLog = JSON.parse(savedGachaLog);
+    }
+    const savedStage = localStorage.getItem('currentStage');
+    if (savedStage) {
+        currentStage = parseInt(savedStage, 10);
+    }
+    const savedDefeated = localStorage.getItem('enemiesDefeatedInStage');
+    if (savedDefeated) {
+        enemiesDefeatedInStage = parseInt(savedDefeated, 10);
+    }
+    
+    // 🚨 修正: 今日のログがない場合、またはcountが定義されていない場合に初期化
+    if (!gachaLog[today] || gachaLog[today].count === undefined) { 
+        userData.hp = userData.maxHp; 
+        gachaLog[today] = { count: 0, studyContent: [] };
+    }
+    // 既存のデータがある場合でも、countが数値であることを保証
+    gachaLog[today].count = Number(gachaLog[today].count) || 0;
 }
 
 
-// --- 共通の計算ロジック, インベントリ操作ロジック, UI更新とステータス計算 (変更なし) ---
-// ... (変更なし) ...
+// --- 共通の計算ロジック, インベントリ操作ロジック, UI更新とステータス計算 (省略) ---
+function calculateWeaponArmorBonus(baseBonus, level) { /* ... */ }
+function calculatePetPercentBonus(basePercent, level) { /* ... */ }
+window.toggleEquipItem = (itemIndex) => { /* ... */ updateUI(); };
+window.enhanceItem = (itemIndex) => { /* ... */ updateUI(); };
+function updateInventoryUI() { /* ... */ }
+function selectEnemy() { /* ... */ }
+function updateEnemyHPBar(enemy, container) { /* ... */ }
+function updateEnemyUI() { /* ... */ }
+window.attackEnemy = () => { /* ... */ };
 
 
-/** 画面全体に関わるUI更新関数 (変更なし) */
+/** 画面全体に関わるUI更新関数 */
 function updateUI() {
-    // ... (変更なし) ...
+    // 1. ガチャ回数更新 
+    const gachaCount = gachaLog[today] ? gachaLog[today].count : 0;
+    document.getElementById('gacha-count').textContent = gachaCount;
+
+    // 2. ガチャボタンの有効/無効化
+    // 🚨 修正: gachaCountが1以上の場合にボタンを活性化します。
+    const isDisabled = gachaCount <= 0;
+    const weaponButton = document.getElementById('gacha-roll-weapon');
+    const petButton = document.getElementById('gacha-roll-pet');
+
+    if (weaponButton) weaponButton.disabled = isDisabled;
+    if (petButton) petButton.disabled = isDisabled;
+
+    // 3. スタンプボタンの有効/無効化
+    const stampsToday = gachaLog[today] ? gachaLog[today].studyContent : [];
+    document.querySelectorAll('.study-stamp-button').forEach(button => {
+        const content = button.getAttribute('data-content');
+        if (stampsToday.includes(content)) {
+            button.classList.add('bg-gray-400');
+            button.classList.remove('bg-green-500'); 
+        } else {
+            button.classList.remove('bg-gray-400');
+            button.classList.add('bg-green-500'); 
+        }
+        button.disabled = false;
+    });
+
+    // 4. ステータス計算とインベントリUIの更新
+    updateInventoryUI(); 
+
+    // 5. データ保存
+    saveData();
 }
 
 
 // --- イベントハンドラーとメインロジック ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. データロード
     loadData();
 
     // 2. スタンプ機能のイベントリスナー
@@ -77,42 +150,62 @@ document.addEventListener('DOMContentLoaded', () => {
         if (button.classList.contains('study-stamp-button') && !button.disabled) {
             const content = button.getAttribute('data-content');
             
-            // ガチャ回数が1回増える
+            // 🚨 修正: スタンプで回数を増やします
             gachaLog[today].count += 1; 
             
-            // スタンプを記録
             if (!gachaLog[today].studyContent.includes(content)) {
                 gachaLog[today].studyContent.push(content); 
             }
             
-            // 🚨 修正: ポップアップのメッセージを変更
             showModal('スタンプゲット！', `今日もがんばったね！<br>ガチャ回数が **1回** 増えたよ！`);
             
             updateUI(); 
         }
     });
 
-    // 3. ガチャ機能のイベントリスナー (変更なし)
+    // 3. ガチャ機能のイベントリスナー
     document.getElementById('gacha-controls').addEventListener('click', (event) => {
-        // ... (変更なし) ...
+        const button = event.target;
+        if (button.classList.contains('gacha-roll-button') && !button.disabled) {
+            const currentGachaCount = gachaLog[today] ? gachaLog[today].count : 0;
+
+            if (currentGachaCount > 0) {
+                // 🚨 修正: ガチャで回数を減らします
+                gachaLog[today].count -= 1; 
+                
+                const type = button.id.includes('weapon') ? 'ぶき' : 'ペット';
+                const resultElement = document.getElementById('gacha-result');
+                
+                const rollItems = items.filter(i => (type === 'ぶき' ? i.type !== 'pet' : i.type === 'pet'));
+                const rolledItem = rollItems[Math.floor(Math.random() * rollItems.length)];
+                
+                userData.inventory.push({ 
+                    id: rolledItem.id, 
+                    level: 1, 
+                    isEquipped: false
+                });
+                
+                resultElement.innerHTML = `<p class="text-xl font-bold text-red-600 mb-2">🎉 ${type}ガチャ 結果発表 🎉</p><p class="text-lg">「${rolledItem.name}」を手に入れた！</p>`;
+
+                updateUI();
+            } else {
+                // この分岐はボタン非活性化により通常は実行されない
+                showModal('回数が足りません', 'スタンプを押してガチャ回数を増やしましょう！');
+            }
+        }
     });
 
-    // 4. 初回UI更新
     updateUI(); 
 });
 
 
-// ------------------ 戦闘ロジック (変更なし) ------------------
+// ------------------ その他の関数 (省略) ------------------
 
-window.attackEnemy = () => {
-    // ... (変更なし) ...
+window.showTab = (clickedButton, tabId) => {
+    // ... (前回の実装を維持) ...
+    if (tabId === 'enemy') { updateEnemyUI(); }
 };
 
-
-// ------------------ その他の関数 (変更なし) ------------------
-window.showTab = (clickedButton, tabId) => { /* ... 変更なし ... */ };
-window.showModal = (title = 'お知らせ', message = '') => { /* ... 変更なし ... */ };
-window.hideModal = () => { /* ... 変更なし ... */ };
-function updateCalendarLogUI() { /* ... 変更なし ... */ }
-function updateInventoryUI() { /* ... 変更なし ... */ }
-function updateEnemyUI() { /* ... 変更なし ... */ }
+window.showModal = (title = 'お知らせ', message = '') => { /* ... */ };
+window.hideModal = () => { /* ... */ };
+function updateCalendarLogUI() { /* ... */ }
