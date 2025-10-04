@@ -1,10 +1,9 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.16: ロジック最終調整と安定化 🌟
+// 🌟 Ver0.17: スタンプボタンとタブ切り替えの動作保証 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
 const today = new Date().toISOString().slice(0, 10);
-const MAX_GACHA_COUNT_INITIAL = 5; 
 const BASE_STATS_HP = 100;
 const BASE_STATS_ATTACK = 10;
 const BASE_STATS_DEFENSE = 5;
@@ -55,7 +54,6 @@ function saveData() {
     localStorage.setItem('gachaLog', JSON.stringify(gachaLog));
     localStorage.setItem('currentStage', currentStage);
     localStorage.setItem('enemiesDefeatedInStage', enemiesDefeatedInStage);
-    console.log("Data saved to LocalStorage.");
 }
 
 function loadData() {
@@ -80,19 +78,18 @@ function loadData() {
         enemiesDefeatedInStage = parseInt(savedDefeated, 10);
     }
     
-    // 🚨 修正: 今日のログがない場合、またはcountが定義されていない場合に初期化
-    if (!gachaLog[today] || gachaLog[today].count === undefined) { 
+    // 今日のログの初期化を確実に実行
+    if (!gachaLog[today] || gachaLog[today].count === undefined || gachaLog[today].studyContent === undefined) { 
         userData.hp = userData.maxHp; 
         gachaLog[today] = { count: 0, studyContent: [] };
     }
-    // 既存のデータがある場合でも、countが数値であることを保証
     gachaLog[today].count = Number(gachaLog[today].count) || 0;
 }
 
 
 // --- 共通の計算ロジック, インベントリ操作ロジック, UI更新とステータス計算 (省略) ---
-function calculateWeaponArmorBonus(baseBonus, level) { /* ... */ }
-function calculatePetPercentBonus(basePercent, level) { /* ... */ }
+function calculateWeaponArmorBonus(baseBonus, level) { /* ... */ return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1)); }
+function calculatePetPercentBonus(basePercent, level) { /* ... */ return basePercent + (level - 1) * PET_GROWTH_RATE; }
 window.toggleEquipItem = (itemIndex) => { /* ... */ updateUI(); };
 window.enhanceItem = (itemIndex) => { /* ... */ updateUI(); };
 function updateInventoryUI() { /* ... */ }
@@ -109,7 +106,6 @@ function updateUI() {
     document.getElementById('gacha-count').textContent = gachaCount;
 
     // 2. ガチャボタンの有効/無効化
-    // 🚨 修正: gachaCountが1以上の場合にボタンを活性化します。
     const isDisabled = gachaCount <= 0;
     const weaponButton = document.getElementById('gacha-roll-weapon');
     const petButton = document.getElementById('gacha-roll-pet');
@@ -118,9 +114,13 @@ function updateUI() {
     if (petButton) petButton.disabled = isDisabled;
 
     // 3. スタンプボタンの有効/無効化
+    // 🚨 修正: スタンプボタンは常に有効（disabled=false）にし、
+    // 記録済みのものは色だけ変更するようにします。
     const stampsToday = gachaLog[today] ? gachaLog[today].studyContent : [];
     document.querySelectorAll('.study-stamp-button').forEach(button => {
         const content = button.getAttribute('data-content');
+        
+        // 記録済みなら色を変更
         if (stampsToday.includes(content)) {
             button.classList.add('bg-gray-400');
             button.classList.remove('bg-green-500'); 
@@ -128,6 +128,8 @@ function updateUI() {
             button.classList.remove('bg-gray-400');
             button.classList.add('bg-green-500'); 
         }
+        
+        // 🚨 ここでボタンを強制的に活性化します
         button.disabled = false;
     });
 
@@ -142,15 +144,16 @@ function updateUI() {
 // --- イベントハンドラーとメインロジック ---
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. データロード
     loadData();
 
     // 2. スタンプ機能のイベントリスナー
     document.getElementById('study-stamps').addEventListener('click', (event) => {
         const button = event.target;
-        if (button.classList.contains('study-stamp-button') && !button.disabled) {
+        // 🚨 修正: ここでbutton.disabledをチェックする必要はないが、コード構造として維持
+        if (button.classList.contains('study-stamp-button')) {
             const content = button.getAttribute('data-content');
             
-            // 🚨 修正: スタンプで回数を増やします
             gachaLog[today].count += 1; 
             
             if (!gachaLog[today].studyContent.includes(content)) {
@@ -166,11 +169,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. ガチャ機能のイベントリスナー
     document.getElementById('gacha-controls').addEventListener('click', (event) => {
         const button = event.target;
+        // 🚨 修正: 確実にgacha-roll-buttonクラスとdisabled状態を確認
         if (button.classList.contains('gacha-roll-button') && !button.disabled) {
             const currentGachaCount = gachaLog[today] ? gachaLog[today].count : 0;
 
             if (currentGachaCount > 0) {
-                // 🚨 修正: ガチャで回数を減らします
                 gachaLog[today].count -= 1; 
                 
                 const type = button.id.includes('weapon') ? 'ぶき' : 'ペット';
@@ -188,24 +191,64 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultElement.innerHTML = `<p class="text-xl font-bold text-red-600 mb-2">🎉 ${type}ガチャ 結果発表 🎉</p><p class="text-lg">「${rolledItem.name}」を手に入れた！</p>`;
 
                 updateUI();
-            } else {
-                // この分岐はボタン非活性化により通常は実行されない
-                showModal('回数が足りません', 'スタンプを押してガチャ回数を増やしましょう！');
             }
         }
     });
 
+    // 4. 初回UI更新
     updateUI(); 
 });
 
 
-// ------------------ その他の関数 (省略) ------------------
+// ------------------ グローバル関数 (HTMLから呼び出される関数) ------------------
 
+// 🚨 修正: windowにアタッチして、HTMLから確実に呼び出せるようにします。
 window.showTab = (clickedButton, tabId) => {
-    // ... (前回の実装を維持) ...
-    if (tabId === 'enemy') { updateEnemyUI(); }
+    // アクティブなボタンの切り替え
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    // 🚨 修正: clickedButtonが存在することを確認
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
+
+    // コンテンツの切り替え
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none'; 
+    });
+    const selectedContent = document.getElementById(tabId);
+    if (selectedContent) {
+        selectedContent.style.display = 'block'; 
+    }
+
+    // 特定のタブを開いたときにUIを更新
+    if (tabId === 'inventory') {
+        updateInventoryUI();
+    }
+    
+    if (tabId === 'calendar') {
+        updateCalendarLogUI();
+    }
+
+    if (tabId === 'enemy') {
+        updateEnemyUI();
+    }
 };
 
-window.showModal = (title = 'お知らせ', message = '') => { /* ... */ };
-window.hideModal = () => { /* ... */ };
+window.showModal = (title = 'お知らせ', message = '') => { 
+    const modal = document.getElementById('custom-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    
+    if (modalTitle) modalTitle.innerHTML = title;
+    if (modalMessage) modalMessage.innerHTML = message;
+    if (modal) modal.classList.add('visible');
+};
+
+window.hideModal = () => { 
+    const modal = document.getElementById('custom-modal');
+    if (modal) modal.classList.remove('visible');
+};
+
 function updateCalendarLogUI() { /* ... */ }
