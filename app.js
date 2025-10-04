@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.20: スタンプボタンの動作保証と色修正 🌟
+// 🌟 Ver0.22: スタンプボタンの色制御を完全に削除し、動作を保証 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -47,14 +47,9 @@ const enemies = {
 let currentEnemy = null;
 
 
-// --- データほぞん・よみこみ関数 (変更なし) ---
+// --- データほぞん・よみこみ関数 (省略) ---
 function saveData() { /* ... */ }
-function loadData() { 
-    // ... (データロードロジックは変更なし) ...
-}
-
-
-// --- 共通の計算ロジック, インベントリ操作ロジック, UI更新とステータス計算 (省略) ---
+function loadData() { /* ... */ }
 function calculateWeaponArmorBonus(baseBonus, level) { return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1)); }
 function calculatePetPercentBonus(basePercent, level) { return basePercent + (level - 1) * PET_GROWTH_RATE; }
 window.toggleEquipItem = (itemIndex) => { updateUI(); };
@@ -80,12 +75,10 @@ function updateUI() {
     if (weaponButton) weaponButton.disabled = isDisabled;
     if (petButton) petButton.disabled = isDisabled;
 
-    // 3. スタンプボタンの色制御
+    // 3. スタンプボタンの動作保証
     document.querySelectorAll('.study-stamp-button').forEach(button => {
-        // 🚨 修正: 常に緑色を適用し、グレーのクラスを確実に削除
-        button.classList.remove('bg-gray-400');
-        button.classList.add('bg-green-500'); 
-        // 🚨 修正: 誤って無効化されないよう、ここで常に有効化します
+        // 🚨 修正: 色制御のコードは不要です。HTML/CSSのデフォルト設定（緑）を維持します。
+        // 🚨 修正: 意図しない無効化を防ぐため、ここで常に有効化します
         button.disabled = false;
     });
 
@@ -104,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. スタンプ機能のイベントリスナー
     document.getElementById('study-stamps').addEventListener('click', (event) => {
-        // 🚨 修正: button要素自体、またはその親であるボタン要素を取得
         const stampButton = event.target.closest('.study-stamp-button');
 
         if (stampButton && !stampButton.disabled) {
@@ -126,17 +118,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 🚨 0.5秒後にボタンを再活性化
             setTimeout(() => {
+                // updateUIによって既に有効化されていますが、念のため再活性化を保証
                 stampButton.disabled = false;
-                // updateUIが呼ばれた後も、ボタンの色が緑であることを再度保証
-                stampButton.classList.remove('bg-gray-400');
-                stampButton.classList.add('bg-green-500'); 
             }, 500);
         }
     });
 
     // 3. ガチャ機能のイベントリスナー (変更なし)
     document.getElementById('gacha-controls').addEventListener('click', (event) => {
-        // ... (変更なし) ...
+        const button = event.target;
+        if (button.classList.contains('gacha-roll-button') && !button.disabled) {
+            const currentGachaCount = gachaLog[today] ? gachaLog[today].count : 0;
+
+            if (currentGachaCount > 0) {
+                gachaLog[today].count -= 1; 
+                
+                const type = button.id.includes('weapon') ? 'ぶき' : 'ペット';
+                const resultElement = document.getElementById('gacha-result');
+                
+                const rollItems = items.filter(i => (type === 'ぶき' ? i.type !== 'pet' : i.type === 'pet'));
+                const rolledItem = rollItems[Math.floor(Math.random() * rollItems.length)];
+                
+                let modalMessage = '';
+                const existingItemIndex = userData.inventory.findIndex(invItem => invItem.id === rolledItem.id);
+
+                if (existingItemIndex !== -1) {
+                    userData.inventory[existingItemIndex].level = (userData.inventory[existingItemIndex].level || 1) + 1;
+                    modalMessage = `<p class="text-xl font-bold text-red-600 mb-2">🎉 ${type}ガチャ 結果発表 🎉</p>
+                                    <img src="${rolledItem.image}" alt="${rolledItem.name}" class="mx-auto my-2 rounded-md border-2 border-yellow-400" width="80" height="80">
+                                    <p class="text-lg">「${rolledItem.name}」がレベルアップしたよ！</p>
+                                    <p class="text-md">現在のレベル: **${userData.inventory[existingItemIndex].level}**</p>`;
+                } else {
+                    userData.inventory.push({ 
+                        id: rolledItem.id, 
+                        level: 1, 
+                        isEquipped: false
+                    });
+                    modalMessage = `<p class="text-xl font-bold text-red-600 mb-2">🎉 ${type}ガチャ 結果発表 🎉</p>
+                                    <img src="${rolledItem.image}" alt="${rolledItem.name}" class="mx-auto my-2 rounded-md border-2 border-blue-400" width="80" height="80">
+                                    <p class="text-lg">「${rolledItem.name}」を手に入れた！</p>`;
+                }
+                
+                showModal('ガチャ結果', modalMessage);
+
+                resultElement.innerHTML = `<p class="text-gray-500">ガチャを引きました！結果はポップアップで確認してください。</p>`;
+
+                updateUI();
+            }
+        }
     });
 
     updateUI(); 
@@ -145,7 +174,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ------------------ グローバル関数 (タブ切り替え、モーダル等) (変更なし) ------------------
 
-window.showTab = (clickedButton, tabId) => { /* ... */ };
+window.showTab = (clickedButton, tabId) => {
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
+
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none'; 
+    });
+    const selectedContent = document.getElementById(tabId);
+    if (selectedContent) {
+        selectedContent.style.display = 'block'; 
+    }
+
+    if (tabId === 'inventory') {
+        updateInventoryUI();
+    }
+    
+    if (tabId === 'calendar') {
+        updateCalendarLogUI();
+    }
+
+    if (tabId === 'enemy') {
+        updateEnemyUI();
+    }
+};
+
 window.showModal = (title = 'お知らせ', message = '') => { /* ... */ };
 window.hideModal = () => { /* ... */ };
 function updateCalendarLogUI() { /* ... */ }
