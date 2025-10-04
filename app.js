@@ -206,3 +206,22 @@ window.showTab = (clickedButton, tabId) => {
 
     if (tabId === 'enemy') {
         updateEnemyUI();
+    }
+};
+
+window.showModal = (title = 'お知らせ', message = '') => { 
+    const modal = document.getElementById('custom-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    
+    if (modalTitle) modalTitle.innerHTML = title;
+    if (modalMessage) modalMessage.innerHTML = message;
+    if (modal) modal.classList.add('visible');
+};
+
+window.hideModal = () => { 
+    const modal = document.getElementById('custom-modal');
+    if (modal) modal.classList.remove('visible');
+};
+
+function updateCalendarLogUI() { /* ... */ }
