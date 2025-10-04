@@ -1,6 +1,6 @@
 // --------------------------------------------------------------------------
 // 🚨 注意: このコードは、他のHTML要素や外部関数（itemsデータ、showModal, hideModalなど）が
-// index.html または別ファイルで定義されていることを前提としています。
+// index.html, style.css、およびアプリの実行環境で定義されていることを前提としています。
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -31,7 +31,6 @@ let currentStage = 1;
 let enemiesDefeatedInStage = 0;
 
 // 🚨 ダミーデータ: アイテム情報 (ガチャとインベントリUIに必要)
-// 実際にはもっと多くのアイテムが必要です
 const items = [
     { id: 'W001', name: '木の剣', type: 'weapon', attackBonus: 5, rarity: 1 },
     { id: 'A001', name: '皮のよろい', type: 'armor', defenseBonus: 3, rarity: 1 },
@@ -84,7 +83,7 @@ function loadData() {
 }
 
 
-// --- 共通の計算ロジック (既存コードから復元) ---
+// --- 共通の計算ロジック ---
 
 function calculateWeaponArmorBonus(baseBonus, level) {
     return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1));
@@ -92,11 +91,11 @@ function calculateWeaponArmorBonus(baseBonus, level) {
 
 function calculatePetPercentBonus(basePercent, level) {
     // basePercentは小数(0.1=10%)。PET_GROWTH_RATEは小数(0.001=0.1%)
-    return Math.round((basePercent + (level - 1) * PET_GROWTH_RATE) * 100) / 100;
+    return Math.round((basePercent + (level - 1) * PET_GROWTH_RATE) * 1000) / 1000;
 }
 
 
-// --- UI更新とステータス計算 (既存コードから復元) ---
+// --- UI更新とステータス計算 ---
 
 function updateInventoryUI() {
     const invDiv = document.getElementById('inventory');
@@ -147,7 +146,7 @@ function updateInventoryUI() {
     const interimMaxHp = Number(BASE_STATS_HP) + Number(totalHpBonus); 
     
     // 2. パーセント補正を適用し、userDataを更新
-    userData.attack = Math.round(interimAttack * (1 + totalAttackPercent)); // calculatePetPercentBonusが既に100で割られた値 (例: 0.05) を返すと仮定
+    userData.attack = Math.round(interimAttack * (1 + totalAttackPercent)); 
     userData.defense = Math.round(interimDefense * (1 + totalDefensePercent));
     userData.maxHp = Math.round(interimMaxHp * (1 + totalHpPercent));
     
@@ -155,9 +154,8 @@ function updateInventoryUI() {
         userData.hp = userData.maxHp;
     }
     
-    // --- UI生成ロジック ---
-    // 🚨 省略: 装備品表示のHTML生成ロジックは元のコードからそのままコピーが必要です。
-
+    // --- UI生成ロジック (簡略化) ---
+    // 装備品と持ち物のリストを生成する具体的なHTMLは省略します
     let mainEquipHtml = '<div style="display: flex; gap: 20px;">[装備品のHTMLをここに生成]</div>';
     let unequippedHtml = '<h3>もちもの</h3><div class="item-list">[未装備品のHTMLをここに生成]</div>';
 
@@ -178,19 +176,22 @@ function updateInventoryUI() {
     `;
     
     invDiv.innerHTML = statusHtml;
-    // saveData() は updateUI() の最後で呼び出すか、スタンプ・ガチャのイベントハンドラ内で呼び出す
+    // saveData() は updateUI() の最後で呼び出される
 }
 
 /** 画面全体に関わるUI更新関数 */
 function updateUI() {
-    // 1. ガチャ回数更新 (gachaLogのcountを使用)
+    // 1. ガチャ回数更新 
     const gachaCount = gachaLog[today] ? MAX_GACHA_COUNT - gachaLog[today].count : MAX_GACHA_COUNT;
     document.getElementById('gacha-count').textContent = gachaCount;
 
     // 2. ガチャボタンの有効/無効化
     const isDisabled = gachaCount <= 0;
-    document.getElementById('gacha-roll-weapon').disabled = isDisabled;
-    document.getElementById('gacha-roll-pet').disabled = isDisabled;
+    const weaponButton = document.getElementById('gacha-roll-weapon');
+    const petButton = document.getElementById('gacha-roll-pet');
+
+    if (weaponButton) weaponButton.disabled = isDisabled;
+    if (petButton) petButton.disabled = isDisabled;
 
     // 3. スタンプボタンの有効/無効化
     const stampsToday = gachaLog[today] ? gachaLog[today].studyContent : [];
@@ -224,7 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. スタンプ機能のイベントリスナー
     document.getElementById('study-stamps').addEventListener('click', (event) => {
         const button = event.target;
-        // スタンプ回数がMAXに達していないか、内容がまだ記録されていないかを確認
         if (button.classList.contains('study-stamp-button') && !button.disabled) {
             const content = button.getAttribute('data-content');
             
@@ -233,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 gachaLog[today].count += 1; 
                 gachaLog[today].studyContent.push(content); 
 
+                // showModal関数はindex.htmlで定義されていることを前提
                 showModal('スタンプゲット！', `「${content}」を記録しました！<br>のこりガチャ回数: ${MAX_GACHA_COUNT - gachaLog[today].count}`);
                 
                 updateUI(); // UI更新とデータ保存
@@ -255,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const type = button.id.includes('weapon') ? 'ぶき' : 'ペット';
                 const resultElement = document.getElementById('gacha-result');
                 
-                // ガチャ実行ロジック (ダミー)
+                // ガチャ実行ロジック 
                 const rollItems = items.filter(i => (type === 'ぶき' ? i.type !== 'pet' : i.type === 'pet'));
                 const rolledItem = rollItems[Math.floor(Math.random() * rollItems.length)];
                 
@@ -285,29 +286,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // タブ切り替え機能 (index.htmlのonclick属性から呼び出される)
 window.showTab = (clickedButton, tabId) => {
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-        content.style.display = 'none'; // CSSでdisplay:noneを操作
-    });
+    // アクティブなボタンの切り替え
     document.querySelectorAll('.tab-button').forEach(button => {
         button.classList.remove('active');
     });
+    clickedButton.classList.add('active');
 
+    // コンテンツの切り替え
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none'; 
+    });
     const selectedContent = document.getElementById(tabId);
     if (selectedContent) {
-        selectedContent.classList.add('active');
-        selectedContent.style.display = 'block'; // 表示を元に戻す
-        
-        // ★特定のタブを開いたときにUIを更新 (特にインベントリ)
-        if (tabId === 'inventory') {
-            updateInventoryUI();
-        }
-        
-        if (tabId === 'calendar') {
-            updateCalendarLogUI(); // 次のステップで実装する関数
-        }
+        selectedContent.style.display = 'block'; 
     }
-    clickedButton.classList.add('active');
+
+    // ★特定のタブを開いたときにUIを更新
+    if (tabId === 'inventory') {
+        updateInventoryUI();
+    }
+    
+    if (tabId === 'calendar') {
+        updateCalendarLogUI(); // きろくタブを開いたときにログを更新
+    }
 };
 
 // カスタムポップアップ機能 (HTMLから呼び出される)
@@ -325,21 +326,31 @@ window.hideModal = () => {
     document.getElementById('custom-modal').classList.remove('visible');
 }
 
-// 🚨 ダミー関数: きろくタブのUI更新 (次のステップで実装)
+// ------------------ 🌟 きろくタブのUI更新 (完成版) 🌟 ------------------
+
 function updateCalendarLogUI() {
     const logList = document.getElementById('study-log-list');
     if (!logList) return;
     
     let html = '';
-    // gachaLog のデータを日付順にリスト化
+    // gachaLog のデータを日付順にリスト化 (新しい日付を先頭に)
     const sortedDates = Object.keys(gachaLog).sort().reverse();
     
     sortedDates.forEach(date => {
         const log = gachaLog[date];
-        if (log.studyContent.length > 0) {
-            html += `<li>${date}: ${log.studyContent.join(', ')} (スタンプ ${log.studyContent.length}個)</li>`;
+        // スタンプ記録がある日のみ表示
+        if (log && log.studyContent && log.studyContent.length > 0) {
+            const stampCount = log.studyContent.length;
+            const contents = log.studyContent.join(', ');
+            
+            // 記録がある場合にリストアイテムを生成
+            html += `<li class="p-2 border-b border-gray-200">
+                        <span class="font-bold text-gray-800">${date}</span>: 
+                        <span class="text-green-600 font-medium">スタンプ ${stampCount}個</span> (内容: ${contents})
+                    </li>`;
         }
     });
     
-    logList.innerHTML = html || '<li>まだ記録がありません。</li>';
+    // 記録がない場合のメッセージ
+    logList.innerHTML = html || '<li class="p-2 text-gray-500">まだ記録がありません。スタンプを押して勉強を記録しましょう！</li>';
 }
