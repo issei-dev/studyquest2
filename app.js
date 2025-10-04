@@ -1,38 +1,280 @@
-// ... (前略: 関数定義などはVer0.06と同じ) ...
-
-// --- 初期化 ---
-window.onload = () => {
-    loadData();
-    updateInventoryUI(); 
-
-    // ★修正: タッチ操作による誤動作防止のコードを修正し、タブやボタンのクリックを妨害しないようにする
-    // iOS/iPadOSのダブルタップによるピンチアウトを無効化
-    document.addEventListener('touchend', (e) => {
-        // ダブルタップ（e.detail === 2）のみを対象とするが、ここでは e.preventDefault() は使わないことで、
-        // 意図しない要素のクリックがブロックされることを防ぎます。
-        // タブ切り替えボタンやスタンプボタンの動作が回復するはずです。
-    }, { passive: true }); // passive: true にすることで、イベント処理が原因の遅延を防ぐ
-
-    // ガチャボタンのイベントリスナー設定 (省略)
-    const weaponGachaButton = document.getElementById('gacha-roll-weapon');
-    if (weaponGachaButton) {
-        weaponGachaButton.onclick = () => processGachaRoll('weapon');
-    }
-    const petGachaButton = document.getElementById('gacha-roll-pet');
-    if (petGachaButton) {
-        petGachaButton.onclick = () => processGachaRoll('pet');
-    }
-
-    // スタンプボタンのイベントリスナー設定
-    document.querySelectorAll('.study-stamp-button').forEach(button => {
-        const content = button.getAttribute('data-content');
-        if (content === 'そのほか') {
-            button.onclick = showOtherStampPopup;
-        } else {
-            button.onclick = () => handleStudyStamp(content);
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>RPG学習アプリ</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            padding: 20px;
+            /* iOS/iPadOSのダブルタップズーム無効化のための基本設定 */
+            touch-action: manipulation;
+            -ms-touch-action: manipulation; 
         }
-    });
-    
-    updateGachaUI(); 
-    showTab('gacha'); 
-};
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            color: #3b82f6;
+            margin-bottom: 0;
+        }
+        /* バージョン表示用のスタイル */
+        #version-display {
+            text-align: left; /* 左寄せ */
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: -10px; 
+            margin-bottom: 20px; 
+            padding-left: 20px;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            background-color: #e5e7eb;
+            color: #1f2937;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            border-radius: 8px 8px 0 0;
+            margin: 0 2px;
+        }
+        .tab-button:hover {
+            background-color: #d1d5db;
+        }
+        .tab-button.active {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 0 10px 10px 10px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .study-stamp-button {
+            padding: 10px 20px;
+            background-color: #10b981;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .study-stamp-button:hover {
+            background-color: #059669;
+        }
+        .gacha-roll-button {
+            padding: 12px 25px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .gacha-roll-button:hover:not(:disabled) {
+            background-color: #dc2626;
+        }
+        .gacha-roll-button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .item-card {
+            border: 1px solid #e5e7eb;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 8px;
+            text-align: center;
+            width: 120px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .item-card img {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 5px;
+            border-radius: 4px;
+        }
+        .item-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .equipped-card {
+            background-color: #f0fdf4;
+            border-color: #4ade80;
+            cursor: pointer;
+        }
+        .empty-slot {
+            background-color: #f3f4f6;
+            border-style: dashed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+            width: 120px;
+        }
+        .enemy-card {
+            border: 2px solid #ef4444;
+            padding: 15px;
+            margin: 5px;
+            border-radius: 12px;
+            text-align: center;
+            width: 150px;
+            background-color: #fef2f2;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .enemy-card img {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 5px;
+            border-radius: 4px;
+        }
+        .hp-bar-container {
+            width: 100%;
+            background-color: #e5e7eb;
+            border-radius: 4px;
+            margin: 5px 0;
+            height: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .hp-bar {
+            height: 100%;
+            transition: width 0.3s ease-out;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            line-height: 20px;
+            font-size: 0.8em;
+        }
+        /* アニメーション */
+        .shake-screen {
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+            transform: translate3d(0, 0, 0);
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(+2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(+4px, 0, 0); }
+        }
+        .shake-enemy {
+            animation: shake-enemy 0.2s cubic-bezier(.36,.07,.19,.97) both;
+            transform: translate3d(0, 0, 0);
+        }
+        @keyframes shake-enemy {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(+4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(+6px, 0, 0); }
+        }
+
+    </style>
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <div class="max-w-4xl mx-auto">
+        <h1>RPG学習アプリ</h1>
+        <!-- Ver0.05修正: バージョン表示を左寄せ -->
+        <p id="version-display">Ver0.07</p> 
+
+        <!-- タブメニュー -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('gacha')">スタンプ・ガチャ</button>
+            <button class="tab-button" onclick="showTab('inventory')">キャラ・もちもの</button>
+            <button class="tab-button" onclick="showTab('enemy')">たたかう</button>
+            <button class="tab-button" onclick="showTab('calendar')">きろく</button>
+        </div>
+
+        <!-- タブコンテンツ -->
+        <div id="content">
+            
+            <!-- ======================================== -->
+            <!-- 1. スタンプ・ガチャタブ -->
+            <!-- ======================================== -->
+            <div id="gacha" class="tab-content active">
+                <h2>きょうのスタンプ</h2>
+                <!-- スタンプボタンエリア -->
+                <div id="study-stamps" class="flex flex-wrap gap-3 mb-5">
+                    <button class="study-stamp-button" data-content="そろタッチ">そろタッチ</button>
+                    <button class="study-stamp-button" data-content="ドラゴンドリル">ドラゴンドリル</button>
+                    <button class="study-stamp-button" data-content="レッスン">レッスン</button>
+                    <button class="study-stamp-button" data-content="そのほか">そのほか</button>
+                </div>
+
+                <hr class="my-5">
+                
+                <h2>ガチャをまわす</h2>
+                <!-- Ver0.05修正: ガチャ回数表示を「ガチャをまわす」の下に移動 -->
+                <p class="mb-2">のこりガチャ回数: <span id="gacha-count" class="font-bold text-lg text-red-500">0</span></p>
+                <p class="mb-4 text-sm text-gray-600">スタンプ1つにつき、1回ガチャが引けます。</p>
+                
+                <div id="gacha-controls" class="flex gap-4">
+                    <button id="gacha-roll-weapon" class="gacha-roll-button" disabled>ぶきガチャ</button>
+                    <button id="gacha-roll-pet" class="gacha-roll-button" disabled>ペットガチャ</button>
+                </div>
+                
+                <div id="gacha-result" class="mt-5 border border-gray-300 p-4 rounded-lg min-h-[100px] bg-gray-50">
+                    <p class="text-gray-500">ガチャをまわすとここに結果がひょうじされます。</p>
+                </div>
+            </div>
+
+            <!-- ======================================== -->
+            <!-- 2. キャラ・もちものタブ -->
+            <!-- ======================================== -->
+            <div id="inventory" class="tab-content">
+                <!-- この内容はapp.jsの updateInventoryUI() によって生成されます -->
+                <p class="text-gray-500">ロード中...</p>
+            </div>
+
+            <!-- ======================================== -->
+            <!-- 3. たたかうタブ -->
+            <!-- ======================================== -->
+            <div id="enemy" class="tab-content">
+                <div id="player-status-enemy-tab">
+                    <!-- app.jsの updateEnemyUI() で更新されます -->
+                </div>
+
+                <hr class="my-5">
+                <h3>てき</h3>
+                <div id="enemy-container" class="flex gap-5 flex-wrap mb-5">
+                    <!-- 敵のカードがここに生成されます -->
+                </div>
+
+                <hr class="my-5">
+                <h3>たたかいのきろく</h3>
+                <div id="battle-log" class="border border-gray-300 p-3 rounded-lg min-h-[50px] bg-gray-50 text-sm">
+                    戦闘ログがここに表示されます。
+                </div>
+            </div>
+
+            <!-- ======================================== -->
+            <!-- 4. きろくタブ -->
+            <!-- ======================================== -->
+            <div id="calendar" class="tab-content">
+                <h2>これまでの べんきょうきろく</h2>
+                <ul id="study-log-list" class="list-disc pl-5">
+                    <!-- 勉強ログがここに生成されます -->
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>
