@@ -10,13 +10,14 @@
             touch-action: manipulation;
             -ms-touch-action: manipulation; 
         }
-        /* バージョン表示用のスタイルを追加 */
+        /* ★修正: バージョン表示用のスタイルを左寄せに変更 */
         #version-display {
-            text-align: center;
+            text-align: left; /* 左寄せ */
             font-size: 0.8em;
             color: #6c757d;
             margin-top: -10px; /* H1との隙間を詰める */
             margin-bottom: 20px; 
+            padding-left: 20px; /* 見た目を整えるために左側に少し余白を追加 */
         }
     </style>
     <link rel="stylesheet" href="style.css">
@@ -24,7 +25,7 @@
 </head>
 <body>
     <h1>RPG学習アプリ</h1>
-    <p id="version-display">Ver0.04</p> 
+    <p id="version-display">Ver0.05</p> 
 
     <div class="tabs">
         <button class="tab-button" onclick="showTab('gacha')">スタンプ・ガチャ</button>
@@ -37,8 +38,6 @@
         
         <div id="gacha" class="tab-content active">
             <h2>きょうのスタンプ</h2>
-            <p>のこりガチャ回数: <span id="gacha-count">0</span></p>
-
             <div id="study-stamps" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
                 <button class="study-stamp-button" data-content="そろタッチ">そろタッチ</button>
                 <button class="study-stamp-button" data-content="ドラゴンドリル">ドラゴンドリル</button>
@@ -49,6 +48,7 @@
             <hr>
             
             <h2>ガチャをまわす</h2>
+            <p>のこりガチャ回数: <span id="gacha-count">0</span></p>
             <p>スタンプ1つにつき、1回ガチャが引けます。</p>
             <div id="gacha-controls" style="display: flex; gap: 20px;">
                 <button id="gacha-roll-weapon" class="gacha-roll-button" disabled>ぶきガチャ</button>
