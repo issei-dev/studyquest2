@@ -1,32 +1,90 @@
+/*
+ * ゲーム/アプリケーション用スタイルシート (CSSカスタムプロパティ導入版)
+ */
+
+/* ====================
+   CSSカスタムプロパティ (変数)
+   ==================== */
+:root {
+    /* メインカラーパレット */
+    --color-main-primary: #ff9800;    /* 鮮やかなオレンジ (ヘッダー, アクセント) */
+    --color-main-secondary: #e91e63; /* ピンク (見出し, 強調) */
+    --color-bg-light: #fce4ec;       /* 背景色 (明るいピンク) */
+    --color-text-dark: #333;         /* 標準の濃いテキスト */
+
+    /* コンポーネントカラー */
+    --color-nav-button: #ffc107;      /* ナビゲーションボタン (黄色) */
+    --color-button-action: #4caf50;   /* アクションボタン (緑) */
+    --color-item-border: #8bc34a;     /* アイテムカードボーダー (明るい緑) */
+    --color-item-bg: #f1f8e9;         /* アイテムカード背景 (薄い緑) */
+    --color-enemy-border: #ef5350;    /* 敵カードボーダー (赤) */
+    --color-enemy-bg: #ffebee;        /* 敵カード背景 (薄い赤) */
+
+    /* HPゲージカラー */
+    --color-hp-full: #4CAF50;    /* 緑 */
+    --color-hp-low: #ff9800;     /* オレンジ */
+    --color-hp-critical: #f44336;/* 赤 */
+}
+
+/* ====================
+   基本スタイル
+   ==================== */
 body {
     font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #fce4ec; /* 明るいピンク */
-    overflow-x: hidden; /* 画面揺れでスクロールバーが出ないように */
+    background-color: var(--color-bg-light); 
+    /* 画面揺れでスクロールバーが出ないように (意図的な水平スクロールは不可になる点に注意) */
+    overflow-x: hidden; 
 }
+
 header {
-    background-color: #ff9800; /* 鮮やかなオレンジ */
+    background-color: var(--color-main-primary);
     color: white;
     padding: 1rem;
     text-align: center;
 }
+
+h2, h3 {
+    color: var(--color-main-secondary);
+}
+
+button {
+    background-color: var(--color-button-action);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.2s; /* ホバー時にスムーズに変化 */
+}
+button:hover {
+    background-color: #66bb6a; /* 少し濃い緑 */
+}
+
+/* ====================
+   ナビゲーション
+   ==================== */
 nav button {
-    background-color: #ffc107; /* 明るい黄色 */
-    color: #333;
+    background-color: var(--color-nav-button);
+    color: var(--color-text-dark);
     border: none;
     padding: 10px 20px;
     font-weight: bold;
     cursor: pointer;
     margin: 0 5px;
     border-radius: 5px;
+    transition: background-color 0.2s;
 }
 nav button:hover {
-    background-color: #ffeb3b;
+    background-color: #ffeb3b; /* ホバー時 */
 }
+
 main {
     padding: 20px;
 }
+
 .tab-content {
     display: none;
     background-color: white;
@@ -37,9 +95,10 @@ main {
 .tab-content.active {
     display: block;
 }
-h2, h3 {
-    color: #e91e63; /* ピンク */
-}
+
+/* ====================
+   アイテムリスト
+   ==================== */
 .item-list {
     display: flex;
     flex-wrap: wrap;
@@ -47,49 +106,58 @@ h2, h3 {
     justify-content: center;
 }
 .item-card {
-    border: 2px solid #8bc34a; /* 明るい緑 */
-    background-color: #f1f8e9; /* 薄い緑 */
+    border: 2px solid var(--color-item-border);
+    background-color: var(--color-item-bg);
     border-radius: 10px;
     padding: 15px;
     text-align: center;
     width: 140px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    /* モバイルでの折り返しを考慮し、最大幅も指定 */
+    max-width: calc(50% - 15px); 
 }
 .item-card img {
     width: 100px;
     height: 100px;
 }
 
-/* 敵の配置を横に3体 */
+/* ====================
+   敵フィールドとカード
+   ==================== */
 .enemy-field {
     display: flex;
-    justify-content: space-around; /* 均等に配置 */
-    flex-wrap: wrap; /* 画面幅が狭いときに折り返す */
+    justify-content: space-around;
+    flex-wrap: wrap; 
     gap: 20px;
     margin-top: 20px;
 }
 
 .enemy-card {
-    border: 2px solid #ef5350; /* 赤 */
-    background-color: #ffebee; /* 薄い赤 */
+    border: 2px solid var(--color-enemy-border);
+    background-color: var(--color-enemy-bg);
     border-radius: 10px;
     padding: 15px;
     text-align: center;
-    width: 220px; /* 画像サイズ200px + パディング、ボーダーを考慮して調整 */
+    width: 220px; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    position: relative; /* 揺れるアニメーションのために必要 */
+    position: relative;
+    /* 狭い画面では幅を制限しすぎないように */
+    max-width: 100%;
 }
+
 .enemy-card img {
-    width: 200px; /* 画像サイズ変更 */
-    height: 200px; /* 画像サイズ変更 */
-    display: block; /* 画像の下の余白をなくす */
-    margin: 0 auto 10px; /* 中央寄せ */
+    width: 200px;
+    height: 200px;
+    display: block; 
+    margin: 0 auto 10px; 
 }
 .enemy-card button {
     margin-top: 10px;
 }
 
-/* HPゲージのスタイル */
+/* ====================
+   HPゲージ
+   ==================== */
 .hp-bar-container {
     width: 100%;
     height: 20px;
@@ -101,10 +169,10 @@ h2, h3 {
 }
 .hp-bar {
     height: 100%;
-    width: 100%; /* 初期は最大 */
-    background-color: #4CAF50; /* 緑色 */
+    width: 100%; 
+    background-color: var(--color-hp-full);
     border-radius: 10px;
-    transition: width 0.5s ease-out; /* HP減少のアニメーション */
+    transition: width 0.5s ease-out; 
     display: flex;
     align-items: center;
     justify-content: center;
@@ -112,45 +180,38 @@ h2, h3 {
     font-weight: bold;
     font-size: 14px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    /* アニメーションの最適化のヒント */
+    will-change: width; 
 }
 .hp-bar.low {
-    background-color: #ff9800; /* オレンジ */
+    background-color: var(--color-hp-low);
 }
 .hp-bar.critical {
-    background-color: #f44336; /* 赤 */
+    background-color: var(--color-hp-critical);
 }
 
-button {
-    background-color: #4caf50; /* 緑 */
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    border-radius: 5px;
-}
-button:hover {
-    background-color: #66bb6a;
-}
+/* ====================
+   ガシャ・ステータス・ログ
+   ==================== */
 #gacha-result {
     margin-top: 20px;
     padding: 15px;
     border-radius: 10px;
-    background-color: #fff9c4; /* クリーム色 */
+    background-color: #fff9c4; 
     border: 2px dashed #ffb300;
     text-align: center;
 }
 #character-status {
-    background-color: #e3f2fd; /* 薄い青 */
+    background-color: #e3f2fd;
     padding: 15px;
     border-radius: 10px;
     border: 2px solid #2196f3;
 }
 #player-status-enemy-tab {
-    background-color: #c8e6c9; /* 薄い緑 */
+    background-color: #c8e6c9;
     padding: 15px;
     border-radius: 10px;
-    border: 2px solid #4CAF50;
+    border: 2px solid var(--color-hp-full);
     margin-bottom: 20px;
     text-align: center;
     font-weight: bold;
@@ -163,6 +224,9 @@ button:hover {
     text-align: center;
 }
 
+/* ====================
+   アニメーション
+   ==================== */
 /* 攻撃時のモンスター揺れアニメーション */
 @keyframes shake-enemy {
     0% { transform: translateX(0); }
