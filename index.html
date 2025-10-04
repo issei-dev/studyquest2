@@ -2,58 +2,89 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>べんきょうRPG</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>RPG学習アプリ</title>
+    <style>
+        body {
+            /* スクロールバー非表示、ダブルタップズーム無効化のための基本設定 */
+            touch-action: manipulation;
+            -ms-touch-action: manipulation; 
+        }
+    </style>
     <link rel="stylesheet" href="style.css">
-    </head>
+    <script src="app.js" defer></script>
+</head>
 <body>
+    <h1>RPG学習アプリ</h1>
 
-    <header>
-        <nav>
-            <button onclick="showTab('gacha')">スタンプ、ガチャ</button>
-            <button onclick="showTab('inventory')">キャラ、もちもの</button>
-            <button onclick="showTab('enemy')">てき</button>
-            <button onclick="showTab('calendar')">カレンダー</button>
-        </nav>
-    </header>
+    <div class="tabs">
+        <button class="tab-button" onclick="showTab('gacha')">スタンプ・ガチャ</button>
+        <button class="tab-button" onclick="showTab('inventory')">キャラ・もちもの</button>
+        <button class="tab-button" onclick="showTab('enemy')">たたかう</button>
+        <button class="tab-button" onclick="showTab('calendar')">きろく</button>
+    </div>
 
-    <main>
+    <div id="content">
+        
         <div id="gacha" class="tab-content active">
-            <h2>スタンプとガチャ</h2>
-            <p>きょうのガチャのこりかいすう: <span id="gacha-count">5</span>かい</p>
-            <form id="gacha-form">
-                <label for="study-content">きょうの べんきょうないよう:</label><br>
-                <textarea id="study-content" rows="4" cols="50" required></textarea><br><br>
-                
-                <label for="gacha-type">ガチャをえらんでね:</label>
-                <select id="gacha-type">
-                    <option value="weapon">ぶき ガチャ</option>
-                    <option value="pet">ペット ガチャ</option>
-                </select><br><br>
-                
-                <button type="submit">ガチャをまわす</button>
-            </form>
-            <div id="gacha-result"></div>
+            <h2>きょうのスタンプ</h2>
+            <p>のこりガチャ回数: <span id="gacha-count">0</span></p>
+
+            <div id="study-stamps" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+                <button class="study-stamp-button" data-content="そろタッチ">そろタッチ</button>
+                <button class="study-stamp-button" data-content="ドラゴンドリル">ドラゴンドリル</button>
+                <button class="study-stamp-button" data-content="レッスン">レッスン</button>
+                <button class="study-stamp-button" data-content="そのほか">そのほか</button>
+            </div>
+
+            <hr>
+            
+            <h2>ガチャをまわす</h2>
+            <p>スタンプ1つにつき、1回ガチャが引けます。</p>
+            <div id="gacha-controls" style="display: flex; gap: 20px;">
+                <button id="gacha-roll-weapon" class="gacha-roll-button" disabled>ぶきガチャ</button>
+                <button id="gacha-roll-pet" class="gacha-roll-button" disabled>ペットガチャ</button>
+            </div>
+            
+            <div id="gacha-result" style="margin-top: 20px; border: 1px solid #ccc; padding: 15px; min-height: 100px;">
+                <p>ガチャをまわすとここに結果がひょうじされます。</p>
+            </div>
         </div>
 
         <div id="inventory" class="tab-content">
+            <h2>キャラクターと アイテムいちらん</h2>
+            <div id="character-status" style="margin-bottom: 20px;">
+                <h3>ステータス</h3>
+                <p>たいりょく: -- / --</p>
+                <p>こうげき力: --</p>
+                <p>ぼうぎょ力: --</p>
             </div>
+            <hr>
+            <p>装備スロットと持ち物がここに表示されます。</p>
+        </div>
 
         <div id="enemy" class="tab-content">
-            <h2>てき</h2>
             <div id="player-status-enemy-tab">
                 </div>
-            <div id="enemy-container" class="enemy-field">
-                </div>
-            <div id="battle-log"></div>
-        </div>
-        
-        <div id="calendar" class="tab-content">
-            <h2>カレンダー</h2>
-            <ul id="study-log-list"></ul>
-        </div>
-    </main>
 
-    <script src="app.js"></script>
+            <hr>
+            <h3>てき</h3>
+            <div id="enemy-container" style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+                </div>
+
+            <hr>
+            <h3>たたかいのきろく</h3>
+            <div id="battle-log" style="border: 1px solid #ccc; padding: 10px; min-height: 50px;">
+                戦闘ログがここに表示されます。
+            </div>
+        </div>
+
+        <div id="calendar" class="tab-content">
+            <h2>これまでの べんきょうきろく</h2>
+            <ul id="study-log-list">
+                </ul>
+        </div>
+
+    </div>
 </body>
 </html>
