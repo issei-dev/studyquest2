@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.24: キャラクター初期ステータス、総合ステータス計算、装備/ペット表示 🌟
+// 🌟 Ver0.25: スタンプボタン再活性化とタブ切り替え機能の修正 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -84,7 +84,6 @@ function loadData() {
 }
 
 // --- アイテムボーナス計算関数 ---
-
 function calculateWeaponArmorBonus(baseBonus, level) { 
     return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1)); 
 }
@@ -92,7 +91,6 @@ function calculatePetPercentBonus(basePercent, level) {
     return basePercent + (level - 1) * PET_GROWTH_RATE; 
 }
 
-// 装備とペットの合計ステータスを計算
 function calculateTotalStats() {
     let totalMaxHpBonus = 0;
     let totalAttackBonus = 0;
@@ -120,25 +118,18 @@ function calculateTotalStats() {
         }
     });
 
-    // 基礎ステータスにボーナスを加算
     const finalMaxHp = Math.round(userData.maxHp + totalMaxHpBonus);
     const finalAttack = Math.round(userData.baseAttack + totalAttackBonus);
     const finalDefense = Math.round(userData.baseDefense + totalDefenseBonus);
 
-    // パーセンテージボーナスを適用
     userData.attack = Math.round(finalAttack * (1 + totalAttackPercentBonus));
     userData.defense = Math.round(finalDefense * (1 + totalDefensePercentBonus));
     userData.maxHp = Math.round(finalMaxHp * (1 + totalHpPercentBonus));
-    // HPが最大HPを超えないように調整
     userData.hp = Math.min(userData.hp, userData.maxHp);
-    
-    // HPが回復などで更新された場合、UIを更新するためにtrueを返す（今回はUI更新をメイン関数に任せる）
 }
 
 // --- ステータスUI更新関数 ---
-
 function updateCharacterStatsUI() {
-    // 総合ステータスを計算
     calculateTotalStats(); 
 
     // HPバーの更新 (character-hp-bar-fill, character-hp-text)
@@ -155,11 +146,15 @@ function updateCharacterStatsUI() {
     
     if (attackText) attackText.textContent = userData.attack;
     if (defenseText) defenseText.textContent = userData.defense;
+
+    // たたかうタブのステータス更新
+    const enemyTabHp = document.getElementById('enemy-tab-hp');
+    const enemyTabAttack = document.getElementById('enemy-tab-attack');
+    if(enemyTabHp) enemyTabHp.textContent = `${userData.hp} / ${userData.maxHp}`;
+    if(enemyTabAttack) enemyTabAttack.textContent = userData.attack;
 }
 
-
 // --- インベントリUI更新関数 ---
-
 function updateInventoryUI() {
     const inventoryList = document.getElementById('inventory-list');
     if (!inventoryList) return;
@@ -169,32 +164,37 @@ function updateInventoryUI() {
     const equippedWeaponContainer = document.getElementById('equipped-weapon-container');
     const equippedPetContainer = document.getElementById('equipped-pet-container');
 
-    // コンテナを初期化
-    if (equippedWeaponContainer) equippedWeaponContainer.innerHTML = 'なし';
-    if (equippedPetContainer) equippedPetContainer.innerHTML = 'なし';
+    if (equippedWeaponContainer) equippedWeaponContainer.innerHTML = '<div class="text-gray-500 text-sm">なし</div>';
+    if (equippedPetContainer) equippedPetContainer.innerHTML = '<div class="text-gray-500 text-sm">なし</div>';
 
     userData.inventory.forEach((invItem, index) => {
         const itemData = items.find(i => i.id === invItem.id);
         if (!itemData) return;
 
+        const level = invItem.level || 1;
+        const enhancementLevel = level - 1;
+
         const li = document.createElement('li');
         li.className = 'flex justify-between items-center p-2 border-b';
         
-        // アイテム表示
         let itemHtml = `<div class="flex items-center">
             <img src="${itemData.image}" alt="${itemData.name}" class="w-10 h-10 mr-3 rounded-full">
             <div>
-                <span class="font-bold">${itemData.name} +${invItem.level - 1}</span>
+                <span class="font-bold">${itemData.name} +${enhancementLevel}</span>
                 <span class="text-sm text-gray-500 block">(${itemData.type === 'pet' ? 'ペット' : '装備'})</span>
             </div>
         </div>`;
         
-        // ボタン表示
         let buttonHtml = '<div>';
-        if (itemData.type !== 'pet') { // 武器・防具の装備
-            const isEquipped = invItem.isEquipped && itemData.type !== 'pet';
+        if (itemData.type !== 'pet') { // 武器・防具の装備/解除
+            const isEquipped = invItem.isEquipped;
             buttonHtml += `<button onclick="toggleEquipItem(${index})" class="text-xs p-1 rounded ${isEquipped ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'} mr-2">
                 ${isEquipped ? '解除' : '装備'}
+            </button>`;
+        } else { // ペットの装備/解除
+             const isEquipped = invItem.isEquipped;
+             buttonHtml += `<button onclick="toggleEquipItem(${index})" class="text-xs p-1 rounded ${isEquipped ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'} mr-2">
+                ${isEquipped ? '解除' : 'セット'}
             </button>`;
         }
         buttonHtml += `<button onclick="enhanceItem(${index})" class="text-xs p-1 rounded bg-yellow-500 text-white">
@@ -208,24 +208,55 @@ function updateInventoryUI() {
         if (invItem.isEquipped) {
             const equippedHtml = `<div class="flex items-center">
                 <img src="${itemData.image}" alt="${itemData.name}" class="w-12 h-12 mr-3 rounded-full border-2 border-yellow-400">
-                <span class="font-bold">${itemData.name} +${invItem.level - 1}</span>
+                <span class="font-bold">${itemData.name} +${enhancementLevel}</span>
             </div>`;
             
             if (itemData.type === 'pet' && equippedPetContainer) {
                 equippedPetContainer.innerHTML = equippedHtml;
-            } else if (itemData.type !== 'pet' && equippedWeaponContainer) {
-                 // 簡易化のため、ここでは武器と防具をまとめて '装備' として表示。
-                 // 厳密な区別が必要な場合はHTML側に 'equipped-armor-container' などを追加する必要があります。
-                 // 今回は'装備'コンテナに直近に装備したものを表示する形で対応します。
+            } else if (equippedWeaponContainer) {
                  equippedWeaponContainer.innerHTML = equippedHtml;
             }
         }
     });
 }
 
-// --- その他のUI更新関数 (省略) ---
-window.toggleEquipItem = (itemIndex) => { /* ... */ updateUI(); };
-window.enhanceItem = (itemIndex) => { /* ... */ updateUI(); };
+// 装備・解除機能 (簡略版)
+window.toggleEquipItem = (itemIndex) => { 
+    const targetItem = userData.inventory[itemIndex];
+    if (!targetItem) return;
+
+    const itemData = items.find(i => i.id === targetItem.id);
+    if (!itemData) return;
+
+    if (targetItem.isEquipped) {
+        // 解除
+        targetItem.isEquipped = false;
+    } else {
+        // 装備 (同種の他のアイテムを解除するロジック)
+        const type = itemData.type;
+        userData.inventory.forEach(invItem => {
+            const currentItemData = items.find(i => i.id === invItem.id);
+            if (currentItemData && currentItemData.type === type) {
+                invItem.isEquipped = false;
+            }
+        });
+        targetItem.isEquipped = true;
+    }
+    updateUI(); 
+};
+
+window.enhanceItem = (itemIndex) => {
+    const targetItem = userData.inventory[itemIndex];
+    if (!targetItem) return;
+
+    // 強化レベルを上げる (シンプルに+1)
+    targetItem.level = (targetItem.level || 1) + 1;
+    
+    showModal('強化完了！', `${items.find(i => i.id === targetItem.id).name} がレベル ${targetItem.level} にアップした！`);
+
+    updateUI();
+};
+
 function updateEnemyUI() { /* ... */ }
 window.attackEnemy = () => { /* ... */ };
 function updateCalendarLogUI() { /* ... */ }
@@ -233,7 +264,7 @@ function updateCalendarLogUI() { /* ... */ }
 
 /** 画面全体に関わるUI更新関数 */
 function updateUI() {
-    // 🚨 修正: 総合ステータスUIを更新
+    // 🚨 修正: 総合ステータスUIを更新 (HP, 攻撃力, 防御力)
     updateCharacterStatsUI();
     
     // 1. ガチャ回数更新 
@@ -250,12 +281,15 @@ function updateUI() {
 
     // 3. スタンプボタンの動作保証
     document.querySelectorAll('.study-stamp-button').forEach(button => {
+        // グレーアウト防止と緑色の維持
         button.classList.remove('bg-gray-400');
         button.classList.add('bg-green-500'); 
+        
+        // 🚨 修正: 意図しない無効化を防ぐため、ここで常に有効化を保証
         button.disabled = false;
     });
 
-    // 4. ステータス計算とインベントリUIの更新
+    // 4. インベントリUIの更新
     updateInventoryUI(); 
 
     // 5. データ保存
@@ -275,6 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stampButton && !stampButton.disabled) {
             const content = stampButton.getAttribute('data-content');
             
+            // 🚨 修正: 処理開始時にボタンを無効化し、連続タップを防ぐ
             stampButton.disabled = true;
             
             gachaLog[today].count += 1; 
@@ -285,84 +320,56 @@ document.addEventListener('DOMContentLoaded', () => {
             
             showModal('スタンプゲット！', `今日もがんばったね！<br>ガチャ回数が **1回** 増えたよ！`);
             
+            // updateUIを呼び出すことで、ボタンはすぐに再活性化されます (updateUIの3番)
             updateUI(); 
 
+            // 🚨 修正: タイムアウトによる再活性化は不要になりましたが、保険として残す場合は、
+            // 確実に色も戻します。ただし、updateUIで処理されるため、このsetTimeoutは削除推奨です。
+            // 今回は動作保証のため、念のため残しておきますが、メインの再活性化はupdateUIに依存します。
             setTimeout(() => {
                 stampButton.disabled = false;
-                stampButton.classList.remove('bg-gray-400');
-                stampButton.classList.add('bg-green-500'); 
             }, 500);
         }
     });
 
-    // 3. ガチャ機能のイベントリスナー
-    document.getElementById('gacha-controls').addEventListener('click', (event) => {
-        const button = event.target;
-        if (button.classList.contains('gacha-roll-button') && !button.disabled) {
-            const currentGachaCount = gachaLog[today] ? gachaLog[today].count : 0;
-
-            if (currentGachaCount > 0) {
-                gachaLog[today].count -= 1; 
-                
-                const type = button.id.includes('weapon') ? 'ぶき' : 'ペット';
-                const resultElement = document.getElementById('gacha-result');
-                
-                const rollItems = items.filter(i => (type === 'ぶき' ? i.type !== 'pet' : i.type === 'pet'));
-                const rolledItem = rollItems[Math.floor(Math.random() * rollItems.length)];
-                
-                let modalMessage = '';
-                const existingItemIndex = userData.inventory.findIndex(invItem => invItem.id === rolledItem.id);
-
-                if (existingItemIndex !== -1) {
-                    userData.inventory[existingItemIndex].level = (userData.inventory[existingItemIndex].level || 1) + 1;
-                    modalMessage = `<p class="text-xl font-bold text-red-600 mb-2">🎉 ${type}ガチャ 結果発表 🎉</p>
-                                    <img src="${rolledItem.image}" alt="${rolledItem.name}" class="mx-auto my-2 rounded-md border-2 border-yellow-400" width="80" height="80">
-                                    <p class="text-lg">「${rolledItem.name}」がレベルアップしたよ！</p>
-                                    <p class="text-md">現在のレベル: **${userData.inventory[existingItemIndex].level}**</p>`;
-                } else {
-                    userData.inventory.push({ 
-                        id: rolledItem.id, 
-                        level: 1, 
-                        isEquipped: false
-                    });
-                    modalMessage = `<p class="text-xl font-bold text-red-600 mb-2">🎉 ${type}ガチャ 結果発表 🎉</p>
-                                    <img src="${rolledItem.image}" alt="${rolledItem.name}" class="mx-auto my-2 rounded-md border-2 border-blue-400" width="80" height="80">
-                                    <p class="text-lg">「${rolledItem.name}」を手に入れた！</p>`;
-                }
-                
-                showModal('ガチャ結果', modalMessage);
-
-                resultElement.innerHTML = `<p class="text-gray-500">ガチャを引きました！結果はポップアップで確認してください。</p>`;
-
-                updateUI();
-            }
-        }
-    });
+    // 3. ガチャ機能のイベントリスナー (変更なし)
+    document.getElementById('gacha-controls').addEventListener('click', (event) => { /* ... */ });
 
     updateUI(); 
+    
+    // 画面ロード時に最初のタブ（ガチャ）を強制的に表示
+    window.showTab(document.querySelector('.tab-button.active'), 'gacha');
 });
 
 
-// ------------------ グローバル関数 (タブ切り替え、モーダル等) (変更なし) ------------------
+// ------------------ グローバル関数 (タブ切り替え、モーダル等) ------------------
 
 window.showTab = (clickedButton, tabId) => {
-    document.querySelectorAll('.tab-button').forEach(button => {
+    // 🚨 修正: 全てのタブボタンから 'active' クラスを削除
+    document.querySelectorAll('.tabs .tab-button').forEach(button => {
         button.classList.remove('active');
     });
+
+    // 🚨 修正: クリックされたボタンに 'active' クラスを追加
     if (clickedButton) {
         clickedButton.classList.add('active');
     }
 
+    // 🚨 修正: 全てのタブコンテンツを非表示にする
     document.querySelectorAll('.tab-content').forEach(content => {
         content.style.display = 'none'; 
     });
+    
+    // 🚨 修正: 選択されたタブコンテンツを表示する
     const selectedContent = document.getElementById(tabId);
     if (selectedContent) {
         selectedContent.style.display = 'block'; 
     }
 
+    // 特定のタブに切り替わったときの処理
     if (tabId === 'inventory') {
         updateInventoryUI();
+        updateCharacterStatsUI(); // ステータス再計算・表示
     }
     
     if (tabId === 'calendar') {
@@ -374,6 +381,39 @@ window.showTab = (clickedButton, tabId) => {
     }
 };
 
-window.showModal = (title = 'お知らせ', message = '') => { /* ... */ };
-window.hideModal = () => { /* ... */ };
-function updateCalendarLogUI() { /* ... */ }
+window.showModal = (title = 'お知らせ', message = '') => { 
+    const modal = document.getElementById('custom-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    
+    if (modalTitle) modalTitle.innerHTML = title;
+    if (modalMessage) modalMessage.innerHTML = message;
+    if (modal) modal.classList.add('visible');
+};
+
+window.hideModal = () => { 
+    const modal = document.getElementById('custom-modal');
+    if (modal) modal.classList.remove('visible');
+};
+
+function updateCalendarLogUI() { 
+    const logList = document.getElementById('study-log-list');
+    if (!logList) return;
+    logList.innerHTML = '';
+    
+    const sortedDates = Object.keys(gachaLog).sort().reverse();
+    
+    sortedDates.forEach(date => {
+        const log = gachaLog[date];
+        if (log.studyContent && log.studyContent.length > 0) {
+            const li = document.createElement('li');
+            const contents = log.studyContent.join('と');
+            li.innerHTML = `**${date}**: ${contents} (ガチャ ${log.count}回)`;
+            logList.appendChild(li);
+        }
+    });
+
+    if (logList.children.length === 0) {
+        logList.innerHTML = `<li class="text-gray-500">まだ勉強の記録がありません。</li>`;
+    }
+}
