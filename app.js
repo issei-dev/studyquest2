@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.22: スタンプボタンの色制御を完全に削除し、動作を保証 🌟
+// 🌟 Ver0.23: スタンプボタンの色と動作を完全に保証 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -47,7 +47,7 @@ const enemies = {
 let currentEnemy = null;
 
 
-// --- データほぞん・よみこみ関数 (省略) ---
+// --- データほぞん・よみこみ関数 (変更なし) ---
 function saveData() { /* ... */ }
 function loadData() { /* ... */ }
 function calculateWeaponArmorBonus(baseBonus, level) { return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1)); }
@@ -75,9 +75,12 @@ function updateUI() {
     if (weaponButton) weaponButton.disabled = isDisabled;
     if (petButton) petButton.disabled = isDisabled;
 
-    // 3. スタンプボタンの動作保証
+    // 3. スタンプボタンの色と動作保証
     document.querySelectorAll('.study-stamp-button').forEach(button => {
-        // 🚨 修正: 色制御のコードは不要です。HTML/CSSのデフォルト設定（緑）を維持します。
+        // 🚨 修正: グレーになるクラスを徹底的に削除し、緑色を適用します
+        button.classList.remove('bg-gray-400');
+        button.classList.add('bg-green-500'); 
+        
         // 🚨 修正: 意図しない無効化を防ぐため、ここで常に有効化します
         button.disabled = false;
     });
@@ -116,10 +119,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             updateUI(); 
 
-            // 🚨 0.5秒後にボタンを再活性化
+            // 🚨 0.5秒後にボタンを再活性化（連続タップ防止の保険）
             setTimeout(() => {
-                // updateUIによって既に有効化されていますが、念のため再活性化を保証
                 stampButton.disabled = false;
+                // 色も念のため再適用
+                stampButton.classList.remove('bg-gray-400');
+                stampButton.classList.add('bg-green-500'); 
             }, 500);
         }
     });
