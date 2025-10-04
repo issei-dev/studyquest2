@@ -1,4 +1,4 @@
-// --- 初期データと変数 (変更なし) ---
+// --- 初期データと変数 ---
 const today = new Date().toISOString().slice(0, 10);
 const MAX_GACHA_COUNT = 5; // スタンプ回数の上限
 const BASE_STATS_HP = 100;
@@ -22,7 +22,7 @@ const DEFEAT_COUNT_FOR_BOSS = 15;
 let gachaLog = {};
 let currentEnemies = [];
 
-// --- アイテムデータ (変更なし) ---
+// --- アイテムデータ (省略) ---
 const items = [
     // 武器 (weapon): 2枠
     { id: 1, name: 'きのつるぎ', type: 'weapon', rarity: 'N', attackBonus: 5, defenseBonus: 1, hpBonus: 0, maxLevel: 50, imageUrl: 'https://placehold.jp/200x200.png?text=きのつるぎ' },
@@ -47,14 +47,12 @@ const items = [
     { id: 103, name: 'きょうかのかたまり（小）', type: 'material', rarity: 'UR', levelIncrease: 4, imageUrl: 'https://placehold.jp/200x200.png?text=かたまり小' },
 ];
 
-// 装備枠の定義 (変更なし)
 const EQUIP_SLOTS = {
     'weapon': 2,
     'armor': 1,
     'pet': 3
 };
 
-// タイプの日本語名 (変更なし)
 const TYPE_NAMES = {
     'weapon': 'ぶき',
     'armor': 'ぼうぐ',
@@ -62,7 +60,6 @@ const TYPE_NAMES = {
     'material': 'そざい'
 };
 
-// --- 敵のデータ (省略) ---
 const ENEMY_GROUPS = {
     1: [ 
         { id: 1, name: 'ゴブリン', hp: 20, maxHp: 20, attack: 10, defense: 3, isBoss: false, category: 'A', imageUrl: 'https://placehold.jp/200x200.png?text=ゴブリン' },
@@ -83,7 +80,7 @@ const DROP_RATES = {
     'Z': [],
 };
 
-// --- データほぞん・よみこみ関数 (変更なし) ---
+// --- データほぞん・よみこみ関数 (省略) ---
 function saveData() {
     localStorage.setItem('userData', JSON.stringify(userData));
     localStorage.setItem('gachaLog', JSON.stringify(gachaLog));
@@ -124,7 +121,7 @@ function updateHpBar(elementId, currentHp, maxHp) {
     bar.style.backgroundColor = percentage > 50 ? 'green' : (percentage > 20 ? 'orange' : 'red');
 }
 
-// --- UIそうさ関数 (タブ切り替え) (変更なし) ---
+// --- UIそうさ関数 (タブ切り替え) (省略) ---
 function showTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
@@ -144,14 +141,7 @@ function showTab(tabId) {
 }
 
 // --- スタンプ・ポップアップ機能 ---
-
-/**
- * スタンプを押した後のポップアップ表示
- * @param {string} message - ポップアップに表示するメッセージ
- * @param {function} onOk - OKボタンを押した後の処理
- */
 function showStampPopup(message, onOk) {
-    // 既存のポップアップがあれば削除
     const existingPopup = document.getElementById('stamp-popup');
     if (existingPopup) existingPopup.remove();
     
@@ -172,11 +162,7 @@ function showStampPopup(message, onOk) {
     };
 }
 
-/**
- * 「そのほか」ボタンを押した際のテキスト入力付きポップアップ
- */
 function showOtherStampPopup() {
-    // 既存のポップアップがあれば削除
     const existingPopup = document.getElementById('stamp-input-popup');
     if (existingPopup) existingPopup.remove();
     
@@ -198,19 +184,12 @@ function showOtherStampPopup() {
         const content = document.getElementById('study-input').value || 'そのほか';
         document.getElementById('stamp-input-popup').remove();
         
-        // 成功時のポップアップ表示を含めて handleStudyStamp を呼び出す
         handleStudyStamp(content, true);
     };
 }
 
-/**
- * 勉強スタンプが押されたときのメイン処理
- * @param {string} content - 勉強内容
- * @param {boolean} isManual - 手動入力かどうか
- */
 function handleStudyStamp(content, isManual = false) {
     if (gachaLog[today].count >= MAX_GACHA_COUNT) {
-        // ★修正: 上限に達した場合でもポップアップを表示
         showStampPopup('きょうのスタンプは じょうげんに たっしました。', updateGachaUI);
         return;
     }
@@ -219,7 +198,6 @@ function handleStudyStamp(content, isManual = false) {
     gachaLog[today].studyContent.push(content);
     saveData();
     
-    // ★修正: 成功時のポップアップを必ず表示し、その後に UI を更新
     showStampPopup('きょうもがんばったね！', updateGachaUI);
 }
 
@@ -228,7 +206,6 @@ function updateGachaUI() {
     const dailyLog = gachaLog[today] || { count: 0, studyContent: [] };
     const remaining = dailyLog.count;
     
-    // ★修正: ガチャ回数を更新
     const gachaCountElement = document.getElementById('gacha-count');
     if (gachaCountElement) {
         gachaCountElement.textContent = remaining;
@@ -240,7 +217,6 @@ function updateGachaUI() {
     });
 }
 
-// --- rollGacha, processGachaRoll は変更なし (省略) ---
 function rollGacha(itemType) {
     const rarities = ['LE', 'UR', 'SR', 'R', 'N'];
     const weights = [1, 4, 15, 30, 50]; 
@@ -323,8 +299,7 @@ function processGachaRoll(itemType) {
     saveData();
 }
 
-
-// --- インベントリーロジック (省略) ---
+// --- インベントリーロジック (装備枠と強化機能) ---
 
 function calculateWeaponArmorBonus(baseBonus, level) {
     if (level <= 1) {
@@ -623,7 +598,7 @@ function applyEnhancement(materialId) {
     const targetItemId = parseInt(targetItemIdStr);
     const targetItemIndex = parseInt(targetItemIndexStr);
 
-    const targetItemCandidates = userData.inventory.filter(item => items.find(i => i.id === item.id).type !== 'material' && item.level < items.find(i => i.id === item.id).maxLevel);
+    const targetItemCandidates = userData.inventory.filter(item => items.find(i => i.id === item.id).type !== 'material' && item.level < items.find(i => i.id === i.id).maxLevel);
     const targetItem = targetItemCandidates[targetItemIndex];
     const materialItem = userData.inventory.find(item => item.id === materialId && !item.isEquipped);
     
@@ -884,7 +859,6 @@ function updateCalendarUI() {
         const count = log.count || 0;
         const studyContent = log.studyContent.length > 0 ? log.studyContent.join(', ') : 'きろくなし';
         
-        // ListItemを作成して追加
         const item = document.createElement('li');
         item.textContent = `${date}: スタンプ${count}こ, きろく: ${studyContent}`; 
         logList.appendChild(item);
@@ -919,12 +893,10 @@ window.onload = () => {
         if (content === 'そのほか') {
             button.onclick = showOtherStampPopup;
         } else {
-            // ★修正: ポップアップを表示する関数を直接呼び出すよう修正
             button.onclick = () => handleStudyStamp(content);
         }
     });
     
-    // ★修正: 初期表示時にガチャUIを更新
     updateGachaUI(); 
     showTab('gacha'); 
 };
