@@ -10,12 +10,21 @@
             touch-action: manipulation;
             -ms-touch-action: manipulation; 
         }
+        /* バージョン表示用のスタイルを追加 */
+        #version-display {
+            text-align: center;
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: -10px; /* H1との隙間を詰める */
+            margin-bottom: 20px; 
+        }
     </style>
     <link rel="stylesheet" href="style.css">
     <script src="app.js" defer></script>
 </head>
 <body>
     <h1>RPG学習アプリ</h1>
+    <p id="version-display">Ver0.04</p> 
 
     <div class="tabs">
         <button class="tab-button" onclick="showTab('gacha')">スタンプ・ガチャ</button>
