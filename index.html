@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* ======================================
-         * 🎨 Ver0.05風 カスタムスタイル（このファイル内に含めるCSS）
-         * ====================================== */
+        * 🎨 Ver0.24風 カスタムスタイル（このファイル内に含めるCSS）
+        * ====================================== */
         body {
             /* スクロールバー非表示、ダブルタップズーム無効化のための基本設定 */
             touch-action: manipulation;
@@ -77,6 +77,26 @@
             border-radius: 8px;
         }
 
+        /* キャラクターHPバーのカスタムスタイル */
+        .hp-bar-container-player {
+            width: 100%;
+            background-color: #ccc;
+            border-radius: 5px;
+            overflow: hidden;
+            height: 15px;
+            margin-top: 5px;
+        }
+        .hp-bar-fill-player {
+            height: 100%;
+            background-color: #4CAF50; /* 緑色 */
+            transition: width 0.3s;
+        }
+
+        /* スタンプボタンのデフォルト色 */
+        .study-stamp-button {
+            background-color: #4CAF50; /* 緑色 */
+        }
+
     </style>
     <link rel="stylesheet" href="style.css">
     <script src="app.js" type="module" defer></script>
@@ -84,7 +104,7 @@
 <body>
     <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl text-center mb-0">RPG学習アプリ</h1>
-        <p id="version-display">Ver0.11</p> 
+        <p id="version-display">Ver0.24</p> 
 
         <div class="tabs flex">
             <button class="tab-button active" onclick="showTab(this, 'gacha')">スタンプ・ガチャ</button>
@@ -111,8 +131,8 @@
                 <p class="mb-4 text-sm text-gray-600">スタンプ1つにつき、1回ガチャが引けます。</p>
                 
                 <div id="gacha-controls" class="flex gap-4">
-                    <button id="gacha-roll-weapon" class="gacha-roll-button px-5 py-3 rounded-lg font-bold text-white shadow-lg" disabled>ぶきガチャ</button>
-                    <button id="gacha-roll-pet" class="gacha-roll-button px-5 py-3 rounded-lg font-bold text-white shadow-lg" disabled>ペットガチャ</button>
+                    <button id="gacha-roll-weapon" class="gacha-roll-button px-5 py-3 rounded-lg font-bold text-white shadow-lg bg-red-600 hover:bg-red-700 disabled:bg-gray-400" disabled>ぶきガチャ</button>
+                    <button id="gacha-roll-pet" class="gacha-roll-button px-5 py-3 rounded-lg font-bold text-white shadow-lg bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400" disabled>ペットガチャ</button>
                 </div>
                 
                 <div id="gacha-result" class="mt-5 border-2 border-dashed border-yellow-500 p-4 rounded-xl min-h-[100px] bg-yellow-50">
@@ -122,19 +142,48 @@
 
             <div id="inventory" class="tab-content">
                 <h2>キャラクターと アイテムいちらん</h2>
-                <div id="character-status" style="margin-bottom: 20px;">
-                    <h3>ステータス</h3>
-                    <p>たいりょく: -- / --</p>
-                    <p>こうげき力: --</p>
-                    <p>ぼうぎょ力: --</p>
+                <div id="character-status" class="bg-gray-100 p-4 rounded-lg mb-5 border">
+                    <h3 class="text-lg font-bold mb-2">現在のステータス</h3>
+                    
+                    <div class="flex items-center mb-1">
+                        <span class="w-20 font-semibold">たいりょく:</span>
+                        <div class="flex-grow mr-2">
+                            <div class="hp-bar-container-player">
+                                <div id="character-hp-bar-fill" class="hp-bar-fill-player" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                        <span id="character-hp-text" class="font-bold text-sm">-- / --</span>
+                    </div>
+
+                    <p>こうげき力: <span id="character-attack" class="font-bold text-red-600">--</span></p>
+                    <p>ぼうぎょ力: <span id="character-defense" class="font-bold text-blue-600">--</span></p>
                 </div>
-                <hr>
-                <p>装備スロットと持ち物がここに表示されます。</p>
+
+                <hr class="my-5 border-gray-300">
+                
+                <h3 class="text-lg font-bold mb-3">現在の装備とペット</h3>
+                <div class="flex gap-4 mb-5">
+                    <div class="p-3 border-2 border-dashed border-gray-300 rounded-lg w-1/2">
+                        <p class="font-semibold text-sm mb-1">そうび:</p>
+                        <div id="equipped-weapon-container" class="text-gray-500 text-sm">なし</div>
+                    </div>
+                    <div class="p-3 border-2 border-dashed border-gray-300 rounded-lg w-1/2">
+                        <p class="font-semibold text-sm mb-1">ペット:</p>
+                        <div id="equipped-pet-container" class="text-gray-500 text-sm">なし</div>
+                    </div>
+                </div>
+
+                <hr class="my-5 border-gray-300">
+
+                <h3 class="text-lg font-bold mb-3">もちものリスト</h3>
+                <ul id="inventory-list" class="divide-y divide-gray-200">
+                    <li class="text-gray-500 p-2">アイテムがありません。</li>
+                </ul>
             </div>
 
             <div id="enemy" class="tab-content">
                 <div id="player-status-enemy-tab" class="bg-blue-100 p-3 rounded-lg border border-blue-300 text-center font-bold mb-5">
-                    プレイヤー ステータス: HP --/--, 攻撃力 --
+                    プレイヤー ステータス: HP <span id="enemy-tab-hp">--/--</span>, 攻撃力 <span id="enemy-tab-attack">--</span>
                 </div>
 
                 <hr class="my-5 border-gray-300">
