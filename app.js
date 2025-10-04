@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.23: スタンプボタンの色と動作を完全に保証 🌟
+// 🌟 Ver0.24: キャラクター初期ステータス、総合ステータス計算、装備/ペット表示 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -47,22 +47,195 @@ const enemies = {
 let currentEnemy = null;
 
 
-// --- データほぞん・よみこみ関数 (変更なし) ---
-function saveData() { /* ... */ }
-function loadData() { /* ... */ }
-function calculateWeaponArmorBonus(baseBonus, level) { return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1)); }
-function calculatePetPercentBonus(basePercent, level) { return basePercent + (level - 1) * PET_GROWTH_RATE; }
-window.toggleEquipItem = (itemIndex) => { updateUI(); };
-window.enhanceItem = (itemIndex) => { updateUI(); };
-function updateInventoryUI() { /* ... */ }
-function selectEnemy() { /* ... */ }
-function updateEnemyHPBar(enemy, container) { /* ... */ }
+// --- データほぞん・よみこみ関数 ---
+function saveData() { 
+    localStorage.setItem('userData', JSON.stringify(userData));
+    localStorage.setItem('gachaLog', JSON.stringify(gachaLog));
+    localStorage.setItem('currentStage', currentStage);
+    localStorage.setItem('enemiesDefeatedInStage', enemiesDefeatedInStage);
+}
+function loadData() { 
+    const savedUserData = localStorage.getItem('userData');
+    if (savedUserData) {
+        userData = JSON.parse(savedUserData);
+        userData.baseAttack = userData.baseAttack || BASE_STATS_ATTACK;
+        userData.baseDefense = userData.baseDefense || BASE_STATS_DEFENSE;
+        userData.maxHp = userData.maxHp || BASE_STATS_HP;
+        userData.hp = userData.hp || userData.maxHp;
+    }
+    const savedGachaLog = localStorage.getItem('gachaLog');
+    if (savedGachaLog) {
+        gachaLog = JSON.parse(savedGachaLog);
+    }
+    const savedStage = localStorage.getItem('currentStage');
+    if (savedStage) {
+        currentStage = parseInt(savedStage, 10);
+    }
+    const savedDefeated = localStorage.getItem('enemiesDefeatedInStage');
+    if (savedDefeated) {
+        enemiesDefeatedInStage = parseInt(savedDefeated, 10);
+    }
+    
+    if (!gachaLog[today] || gachaLog[today].count === undefined || gachaLog[today].studyContent === undefined) { 
+        userData.hp = userData.maxHp; 
+        gachaLog[today] = { count: 0, studyContent: [] };
+    }
+    gachaLog[today].count = Number(gachaLog[today].count) || 0;
+}
+
+// --- アイテムボーナス計算関数 ---
+
+function calculateWeaponArmorBonus(baseBonus, level) { 
+    return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1)); 
+}
+function calculatePetPercentBonus(basePercent, level) { 
+    return basePercent + (level - 1) * PET_GROWTH_RATE; 
+}
+
+// 装備とペットの合計ステータスを計算
+function calculateTotalStats() {
+    let totalMaxHpBonus = 0;
+    let totalAttackBonus = 0;
+    let totalDefenseBonus = 0;
+    let totalHpPercentBonus = 0;
+    let totalAttackPercentBonus = 0;
+    let totalDefensePercentBonus = 0;
+
+    userData.inventory.forEach((invItem) => {
+        if (invItem.isEquipped) {
+            const itemData = items.find(i => i.id === invItem.id);
+            if (!itemData) return;
+
+            const level = invItem.level || 1;
+
+            if (itemData.type === 'weapon' || itemData.type === 'armor') {
+                totalMaxHpBonus += calculateWeaponArmorBonus(itemData.hpBonus || 0, level);
+                totalAttackBonus += calculateWeaponArmorBonus(itemData.attackBonus || 0, level);
+                totalDefenseBonus += calculateWeaponArmorBonus(itemData.defenseBonus || 0, level);
+            } else if (itemData.type === 'pet') {
+                totalHpPercentBonus += calculatePetPercentBonus(itemData.hpPercentBonus || 0, level);
+                totalAttackPercentBonus += calculatePetPercentBonus(itemData.attackPercentBonus || 0, level);
+                totalDefensePercentBonus += calculatePetPercentBonus(itemData.defensePercentBonus || 0, level);
+            }
+        }
+    });
+
+    // 基礎ステータスにボーナスを加算
+    const finalMaxHp = Math.round(userData.maxHp + totalMaxHpBonus);
+    const finalAttack = Math.round(userData.baseAttack + totalAttackBonus);
+    const finalDefense = Math.round(userData.baseDefense + totalDefenseBonus);
+
+    // パーセンテージボーナスを適用
+    userData.attack = Math.round(finalAttack * (1 + totalAttackPercentBonus));
+    userData.defense = Math.round(finalDefense * (1 + totalDefensePercentBonus));
+    userData.maxHp = Math.round(finalMaxHp * (1 + totalHpPercentBonus));
+    // HPが最大HPを超えないように調整
+    userData.hp = Math.min(userData.hp, userData.maxHp);
+    
+    // HPが回復などで更新された場合、UIを更新するためにtrueを返す（今回はUI更新をメイン関数に任せる）
+}
+
+// --- ステータスUI更新関数 ---
+
+function updateCharacterStatsUI() {
+    // 総合ステータスを計算
+    calculateTotalStats(); 
+
+    // HPバーの更新 (character-hp-bar-fill, character-hp-text)
+    const hpPercent = (userData.hp / userData.maxHp) * 100;
+    const hpBar = document.getElementById('character-hp-bar-fill');
+    const hpText = document.getElementById('character-hp-text');
+
+    if (hpBar) hpBar.style.width = `${hpPercent}%`;
+    if (hpText) hpText.textContent = `${userData.hp} / ${userData.maxHp}`;
+
+    // 攻撃力、防御力の数値更新 (character-attack, character-defense)
+    const attackText = document.getElementById('character-attack');
+    const defenseText = document.getElementById('character-defense');
+    
+    if (attackText) attackText.textContent = userData.attack;
+    if (defenseText) defenseText.textContent = userData.defense;
+}
+
+
+// --- インベントリUI更新関数 ---
+
+function updateInventoryUI() {
+    const inventoryList = document.getElementById('inventory-list');
+    if (!inventoryList) return;
+    
+    inventoryList.innerHTML = '';
+    
+    const equippedWeaponContainer = document.getElementById('equipped-weapon-container');
+    const equippedPetContainer = document.getElementById('equipped-pet-container');
+
+    // コンテナを初期化
+    if (equippedWeaponContainer) equippedWeaponContainer.innerHTML = 'なし';
+    if (equippedPetContainer) equippedPetContainer.innerHTML = 'なし';
+
+    userData.inventory.forEach((invItem, index) => {
+        const itemData = items.find(i => i.id === invItem.id);
+        if (!itemData) return;
+
+        const li = document.createElement('li');
+        li.className = 'flex justify-between items-center p-2 border-b';
+        
+        // アイテム表示
+        let itemHtml = `<div class="flex items-center">
+            <img src="${itemData.image}" alt="${itemData.name}" class="w-10 h-10 mr-3 rounded-full">
+            <div>
+                <span class="font-bold">${itemData.name} +${invItem.level - 1}</span>
+                <span class="text-sm text-gray-500 block">(${itemData.type === 'pet' ? 'ペット' : '装備'})</span>
+            </div>
+        </div>`;
+        
+        // ボタン表示
+        let buttonHtml = '<div>';
+        if (itemData.type !== 'pet') { // 武器・防具の装備
+            const isEquipped = invItem.isEquipped && itemData.type !== 'pet';
+            buttonHtml += `<button onclick="toggleEquipItem(${index})" class="text-xs p-1 rounded ${isEquipped ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'} mr-2">
+                ${isEquipped ? '解除' : '装備'}
+            </button>`;
+        }
+        buttonHtml += `<button onclick="enhanceItem(${index})" class="text-xs p-1 rounded bg-yellow-500 text-white">
+            強化
+        </button></div>`;
+
+        li.innerHTML = itemHtml + buttonHtml;
+        inventoryList.appendChild(li);
+
+        // 装備/ペットの表示を更新
+        if (invItem.isEquipped) {
+            const equippedHtml = `<div class="flex items-center">
+                <img src="${itemData.image}" alt="${itemData.name}" class="w-12 h-12 mr-3 rounded-full border-2 border-yellow-400">
+                <span class="font-bold">${itemData.name} +${invItem.level - 1}</span>
+            </div>`;
+            
+            if (itemData.type === 'pet' && equippedPetContainer) {
+                equippedPetContainer.innerHTML = equippedHtml;
+            } else if (itemData.type !== 'pet' && equippedWeaponContainer) {
+                 // 簡易化のため、ここでは武器と防具をまとめて '装備' として表示。
+                 // 厳密な区別が必要な場合はHTML側に 'equipped-armor-container' などを追加する必要があります。
+                 // 今回は'装備'コンテナに直近に装備したものを表示する形で対応します。
+                 equippedWeaponContainer.innerHTML = equippedHtml;
+            }
+        }
+    });
+}
+
+// --- その他のUI更新関数 (省略) ---
+window.toggleEquipItem = (itemIndex) => { /* ... */ updateUI(); };
+window.enhanceItem = (itemIndex) => { /* ... */ updateUI(); };
 function updateEnemyUI() { /* ... */ }
 window.attackEnemy = () => { /* ... */ };
+function updateCalendarLogUI() { /* ... */ }
 
 
 /** 画面全体に関わるUI更新関数 */
 function updateUI() {
+    // 🚨 修正: 総合ステータスUIを更新
+    updateCharacterStatsUI();
+    
     // 1. ガチャ回数更新 
     const gachaCount = gachaLog[today] ? gachaLog[today].count : 0;
     document.getElementById('gacha-count').textContent = gachaCount;
@@ -75,13 +248,10 @@ function updateUI() {
     if (weaponButton) weaponButton.disabled = isDisabled;
     if (petButton) petButton.disabled = isDisabled;
 
-    // 3. スタンプボタンの色と動作保証
+    // 3. スタンプボタンの動作保証
     document.querySelectorAll('.study-stamp-button').forEach(button => {
-        // 🚨 修正: グレーになるクラスを徹底的に削除し、緑色を適用します
         button.classList.remove('bg-gray-400');
         button.classList.add('bg-green-500'); 
-        
-        // 🚨 修正: 意図しない無効化を防ぐため、ここで常に有効化します
         button.disabled = false;
     });
 
@@ -105,12 +275,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stampButton && !stampButton.disabled) {
             const content = stampButton.getAttribute('data-content');
             
-            // 🚨 連続タップ防止のため、処理開始時にボタンを無効化
             stampButton.disabled = true;
             
             gachaLog[today].count += 1; 
             
-            // 記録はコンテンツ種類ごとに1日1回のみ
             if (!gachaLog[today].studyContent.includes(content)) {
                 gachaLog[today].studyContent.push(content); 
             }
@@ -119,17 +287,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             updateUI(); 
 
-            // 🚨 0.5秒後にボタンを再活性化（連続タップ防止の保険）
             setTimeout(() => {
                 stampButton.disabled = false;
-                // 色も念のため再適用
                 stampButton.classList.remove('bg-gray-400');
                 stampButton.classList.add('bg-green-500'); 
             }, 500);
         }
     });
 
-    // 3. ガチャ機能のイベントリスナー (変更なし)
+    // 3. ガチャ機能のイベントリスナー
     document.getElementById('gacha-controls').addEventListener('click', (event) => {
         const button = event.target;
         if (button.classList.contains('gacha-roll-button') && !button.disabled) {
