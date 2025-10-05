@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.31: 動作エラー修正、複数装備スロット対応、画像URL統一 🌟
+// 🌟 Ver0.32: 戦闘ロジック実装 (findEnemy, attackEnemy) と自動回復ロジック追加 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -9,6 +9,7 @@ const BASE_STATS_ATTACK = 10;
 const BASE_STATS_DEFENSE = 5;
 const ENHANCEMENT_RATE = 1.2;
 const PET_GROWTH_RATE = 0.001;
+const MAX_ENEMIES_PER_BATTLE = 3; // 同時に出現する雑魚敵の最大数
 
 // ガチャのレアリティ抽選確率を定義（合計100%になるように調整）
 const GACHA_RARITY_GROUPS = {
@@ -43,6 +44,7 @@ let userData = {
 
 // 日別スタンプ記録とガチャ回数 (countは利用可能回数)
 let gachaLog = {};
+let lastPlayedDate = today; // 最終プレイ日を保持する変数を追加
 
 // --- アイテムデータ (画像URLをSQ2-w001.pngシリーズに統一) ---
 const items = [
@@ -142,9 +144,10 @@ const enemies = {
     // ステージ1のボス (Category C: R:90%, SR:10%)
     '1_boss': {
         id: 8, name: 'ドラゴン', hp: 500, attack: 100, defense: 20, category: 'C', attackCount: 2, isBoss: true, image: 'SQ2-e008.png'
-    }
+    },
+    // ステージ2以降のデータは省略...
 };
-let currentEnemy = null;
+let currentEnemies = []; // 🚨 複数敵対応のため、配列に変更
 
 
 // --- データほぞん・よみこみ関数 ---
@@ -153,6 +156,8 @@ function saveData() {
     localStorage.setItem('gachaLog', JSON.stringify(gachaLog));
     localStorage.setItem('currentStage', currentStage);
     localStorage.setItem('enemiesDefeatedInStage', enemiesDefeatedInStage);
+    localStorage.setItem('currentEnemies', JSON.stringify(currentEnemies)); // 敵の状態を保存
+    localStorage.setItem('lastPlayedDate', lastPlayedDate); // 最終プレイ日を保存
 }
 function loadData() {
     const savedUserData = localStorage.getItem('userData');
@@ -175,13 +180,42 @@ function loadData() {
     if (savedDefeated) {
         enemiesDefeatedInStage = parseInt(savedDefeated, 10);
     }
+    // 🚨 敵の状態をロード
+    const savedEnemies = localStorage.getItem('currentEnemies');
+    if (savedEnemies) {
+        currentEnemies = JSON.parse(savedEnemies);
+    }
     
+    // 🚨 最終プレイ日をロード
+    const savedLastPlayedDate = localStorage.getItem('lastPlayedDate');
+    if (savedLastPlayedDate) {
+        lastPlayedDate = savedLastPlayedDate;
+    }
+    
+    // 🚨 自動回復チェック
+    handleAutoHeal();
+
     if (!gachaLog[today] || gachaLog[today].count === undefined || gachaLog[today].studyContent === undefined) {
-        userData.hp = userData.maxHp;
+        // gachaLogは毎日リセットする
         gachaLog[today] = { count: 0, studyContent: [] };
     }
     gachaLog[today].count = Number(gachaLog[today].count) || 0;
 }
+
+// 🚨 自動回復ロジック
+function handleAutoHeal() {
+    // 最終プレイ日と今日の日付が異なるかチェック
+    if (lastPlayedDate !== today) {
+        if (userData.hp < userData.maxHp || currentEnemies.length > 0) {
+            userData.hp = userData.maxHp; // 全回復
+            currentEnemies = []; // 戦闘リセット
+            log('日付が変わったため、HPが全回復し、戦闘がリセットされました。');
+        }
+        // 最終プレイ日を更新
+        lastPlayedDate = today;
+    }
+}
+
 
 // --- アイテムボーナス計算関数 ---
 function calculateWeaponArmorBonus(baseBonus, level) {
@@ -241,6 +275,22 @@ function calculateTotalStats() {
 
 // --- UI表示関連関数 ---
 
+// ログ表示ヘルパー
+function log(message, className = 'text-gray-700') {
+    const battleLog = document.getElementById('battle-log');
+    if (battleLog) {
+        const newLog = document.createElement('p');
+        newLog.className = `text-xs ${className}`;
+        newLog.innerHTML = `[${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}] ${message}`;
+        battleLog.prepend(newLog);
+
+        // ログの最大表示数を制限
+        while (battleLog.children.length > 50) {
+            battleLog.removeChild(battleLog.lastChild);
+        }
+    }
+}
+
 // タブ切り替え
 window.showTab = (button, tabId) => {
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -282,7 +332,7 @@ function updateCharacterStatsUI() {
     const hpText = document.getElementById('character-hp-text');
 
     if (hpBar) hpBar.style.width = `${hpPercent}%`;
-    if (hpText) hpText.textContent = `${userData.hp} / ${userData.maxHp}`;
+    if (hpText) hpText.textContent = `${Math.max(0, userData.hp)} / ${userData.maxHp}`; // HPが0未満にならないように調整
 
     // 攻撃力、防御力の数値更新 (character-attack, character-defense)
     const attackText = document.getElementById('character-attack');
@@ -294,12 +344,70 @@ function updateCharacterStatsUI() {
     // たたかうタブのステータス更新
     const enemyTabHp = document.getElementById('enemy-tab-hp');
     const enemyTabAttack = document.getElementById('enemy-tab-attack');
-    if(enemyTabHp) enemyTabHp.textContent = `${userData.hp} / ${userData.maxHp}`;
+    const stageCount = document.getElementById('current-stage');
+    const defeatedCount = document.getElementById('enemies-defeated-count');
+
+    if(enemyTabHp) enemyTabHp.textContent = `${Math.max(0, userData.hp)} / ${userData.maxHp}`;
     if(enemyTabAttack) enemyTabAttack.textContent = userData.attack;
+    if(stageCount) stageCount.textContent = currentStage;
+    if(defeatedCount) defeatedCount.textContent = `${enemiesDefeatedInStage} / ${ENEMY_DEFEAT_COUNT_TO_BOSS}`;
+
+    // HPが0の場合、攻撃ボタンを無効化
+    document.getElementById('attack-button').disabled = userData.hp <= 0 || currentEnemies.length === 0;
+    document.getElementById('find-enemy-button').disabled = currentEnemies.length > 0;
 }
 
-// --- インベントリUI更新関数 ---
+// 🚨 敵のUI更新関数 (複数敵対応)
+function updateEnemyUI() {
+    const enemyArea = document.getElementById('enemy-area');
+    const attackButton = document.getElementById('attack-button');
+    const findButton = document.getElementById('find-enemy-button');
+
+    if (!enemyArea) return;
+
+    if (currentEnemies.length === 0) {
+        enemyArea.innerHTML = `<p class="text-gray-500 mb-4 text-center">敵がいません。下の「敵を探す」ボタンを押して探索開始！</p>`;
+        attackButton.disabled = true;
+        findButton.disabled = userData.hp <= 0 ? true : false;
+        return;
+    }
+
+    enemyArea.innerHTML = '';
+    currentEnemies.forEach((enemy, index) => {
+        const hpPercent = (enemy.hp / enemy.maxHp) * 100;
+        const isBossClass = enemy.isBoss ? 'border-red-500' : 'border-blue-500';
+        const nameClass = enemy.isBoss ? 'font-extrabold text-red-700' : 'font-bold';
+
+        enemyArea.innerHTML += `
+            <div class="p-3 border rounded-lg bg-white mb-2 shadow-md w-full">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <img src="${enemy.image}" alt="${enemy.name}" class="w-12 h-12 mr-3 rounded-full ${isBossClass} border-2">
+                        <div>
+                            <h4 class="${nameClass} text-base">${enemy.name} ${enemy.isBoss ? '👑' : ''}</h4>
+                            <p class="text-xs text-gray-600">攻撃: ${enemy.attack} / 防御: ${enemy.defense}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs font-semibold">HP: <span id="enemy-hp-text-${index}">${Math.max(0, enemy.hp)} / ${enemy.maxHp}</span></p>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3 mt-1">
+                    <div id="enemy-hp-bar-fill-${index}" class="bg-red-500 h-3 rounded-full transition-all duration-300" style="width: ${hpPercent}%"></div>
+                </div>
+            </div>
+        `;
+    });
+    
+    attackButton.disabled = userData.hp <= 0;
+    findButton.disabled = true;
+}
+
+
+// --- インベントリUI更新関数 (省略) ---
+
 function updateInventoryUI() {
+    // 既存のインベントリUI更新ロジックを維持
     const inventoryList = document.getElementById('inventory-list');
     if (!inventoryList) return;
     
@@ -356,8 +464,8 @@ function updateInventoryUI() {
              const isEquipped = invItem.isEquipped;
              const equipText = itemData.type === 'pet' ? 'セット' : '装備';
              buttonHtml += `<button onclick="toggleEquipItem(${index})" class="text-xs p-1 rounded ${isEquipped ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'} mr-2">
-                ${isEquipped ? '解除' : equipText}
-            </button>`;
+                 ${isEquipped ? '解除' : equipText}
+             </button>`;
         }
         buttonHtml += `<button onclick="showEnhanceModal(${index})" class="text-xs p-1 rounded bg-yellow-500 text-white">
             強化
@@ -395,6 +503,7 @@ function updateInventoryUI() {
 }
 
 function updateMaterialInventoryUI() {
+    // 既存の素材UI更新ロジックを維持
     const materialList = document.getElementById('material-list');
     if (!materialList) return;
     materialList.innerHTML = '';
@@ -429,8 +538,9 @@ function updateMaterialInventoryUI() {
     });
 }
 
+// --- その他のUI・装備・ガチャロジック (省略) ---
 
-// 装備・解除機能
+// 装備・解除機能 (維持)
 window.toggleEquipItem = (itemIndex) => {
     const targetItem = userData.inventory[itemIndex];
     if (!targetItem) return;
@@ -447,23 +557,24 @@ window.toggleEquipItem = (itemIndex) => {
     } else {
         // 装備
         // 現在装備中の同種アイテム数をカウント
-        const equippedCount = userData.inventory.filter(invItem => {
+        const equippedItems = userData.inventory.filter(invItem => {
             const currentItemData = items.find(i => i.id === invItem.id);
             return currentItemData && currentItemData.type === type && invItem.isEquipped;
-        }).length;
+        });
 
-        if (equippedCount >= maxEquip) {
+        if (equippedItems.length >= maxEquip) {
             // 上限に達している場合、最も古い（または最初の）装備品を自動で解除する
-            const firstEquippedIndex = userData.inventory.findIndex(invItem => {
-                const currentItemData = items.find(i => i.id === invItem.id);
-                return currentItemData && currentItemData.type === type && invItem.isEquipped;
-            });
-
-            if (firstEquippedIndex !== -1 && maxEquip > 0) {
-                userData.inventory[firstEquippedIndex].isEquipped = false;
-            } else if (maxEquip === 0) {
-                showModal('装備エラー', `${itemData.name} (${type === 'weapon' ? '武器' : type === 'pet' ? 'ペット' : '防具'})は装備できません。`);
-                return;
+            if (maxEquip > 0) {
+                 const firstEquippedIndex = userData.inventory.findIndex(invItem => {
+                     const currentItemData = items.find(i => i.id === invItem.id);
+                     return currentItemData && currentItemData.type === type && invItem.isEquipped;
+                 });
+                 if (firstEquippedIndex !== -1) {
+                     userData.inventory[firstEquippedIndex].isEquipped = false;
+                 }
+            } else {
+                 showModal('装備エラー', `${itemData.name} (${type === 'weapon' ? '武器' : type === 'pet' ? 'ペット' : '防具'})は装備できません。`);
+                 return;
             }
         }
         
@@ -474,7 +585,7 @@ window.toggleEquipItem = (itemIndex) => {
 };
 
 
-// 強化モーダル表示（強化アイテムの選択機能付き）
+// 強化モーダル表示（維持）
 window.showEnhanceModal = (itemIndex) => {
     const targetItem = userData.inventory[itemIndex];
     if (!targetItem) return;
@@ -561,17 +672,10 @@ window.enhanceItem = (itemIndex, materialId) => {
     updateUI();
 };
 
-
-// --- ガチャロジック関連関数 ---
-
-/**
- * 確率テーブルに基づき、レアリティを抽選する
- * @param {string} type - 'weapon' または 'pet'
- * @returns {string} 抽選されたレアリティ ('N', 'R', 'SR', 'UR', 'LE')
- */
+// ガチャロジック (維持)
 function drawRarity(type) {
     const rarityGroups = GACHA_RARITY_GROUPS[type];
-    if (!rarityGroups) return 'N'; // デフォルト
+    if (!rarityGroups) return 'N'; 
 
     const totalWeight = Object.values(rarityGroups).reduce((sum, weight) => sum + weight, 0);
     let randomNum = Math.random() * totalWeight;
@@ -582,36 +686,24 @@ function drawRarity(type) {
             return rarity;
         }
     }
-    return 'N'; // 安全策
+    return 'N'; 
 }
 
-/**
- * 抽選されたレアリティとタイプに基づき、ランダムなアイテムを1つ選ぶ
- * @param {string} type - 'weapon' または 'pet'
- * @returns {object|null} 抽選されたアイテムデータ
- */
 function getRandomItem(type) {
     const drawnRarity = drawRarity(type);
 
-    // 抽選されたレアリティとタイプに一致するアイテムをフィルタリング
     const availableItems = items.filter(item => 
         item.type === type && item.rarity === drawnRarity
     );
 
     if (availableItems.length === 0) {
-        // もし該当アイテムがなければ、同じタイプで一つ上のレアリティを再検索 (緊急措置)
         return items.find(item => item.type === type) || null;
     }
 
-    // フィルタリングされたアイテムからランダムに1つ選択
     const randomIndex = Math.floor(Math.random() * availableItems.length);
     return availableItems[randomIndex];
 }
 
-/**
- * ガチャを引く処理を実行する
- * @param {string} type - 'weapon' または 'pet'
- */
 window.rollGacha = (type) => {
     if ((gachaLog[today]?.count || 0) <= 0) {
         showModal('エラー', 'ガチャ回数が足りません。勉強スタンプを押して回数を増やしましょう！');
@@ -632,19 +724,16 @@ window.rollGacha = (type) => {
     let isDuplicate = false;
     let enhancedItem = null;
 
-    // 既に持っているアイテムの中から、同一IDのものを探す（ここでは最初に見つかったものを対象とする）
     const existingItemIndex = userData.inventory.findIndex(invItem => invItem.id === resultItemData.id);
 
     if (existingItemIndex !== -1) {
-        // 1. 同一アイテムを発見した場合、レベルを+1
         enhancedItem = userData.inventory[existingItemIndex];
         enhancedItem.level = (enhancedItem.level || 1) + 1;
         isDuplicate = true;
     } else {
-        // 2. 新規アイテムとしてインベントリに追加
         const newItem = {
             id: resultItemData.id,
-            level: 1, // 初期レベルは1
+            level: 1, 
             isEquipped: false
         };
         userData.inventory.push(newItem);
@@ -660,7 +749,6 @@ window.rollGacha = (type) => {
     
     let modalMessage = '';
     if (isDuplicate) {
-        // 重複時のメッセージ
         modalMessage = `<div class="text-center">
             <img src="${resultItemData.image}" alt="${resultItemData.name}" class="w-20 h-20 mx-auto mb-3 rounded-full border-2 border-dashed ${rarityColorClass.replace('text', 'border')}">
             <p class="font-bold text-lg">✨ レベルアップ！ ✨</p>
@@ -668,7 +756,6 @@ window.rollGacha = (type) => {
             <p class="mt-2 text-sm text-gray-700">現在のレベル: **+${enhancedItem.level - 1}** が **+${enhancedItem.level}** に！</p>
         </div>`;
     } else {
-        // 新規獲得時のメッセージ
         modalMessage = `<div class="text-center">
             <img src="${resultItemData.image}" alt="${resultItemData.name}" class="w-20 h-20 mx-auto mb-3 rounded-full border-2 border-dashed ${rarityColorClass.replace('text', 'border')}">
             <p class="font-bold text-lg">🎉 ${resultItemData.rarity} ゲット！ 🎉</p>
@@ -682,101 +769,217 @@ window.rollGacha = (type) => {
     updateUI();
 };
 
-// --- 戦闘ダミー関数 ---
-// 🚨 (必須ではないが、エラー防止のため定義しておきます)
-function updateEnemyUI() { 
-    const enemyArea = document.getElementById('enemy-area');
-    if (enemyArea) {
-        enemyArea.innerHTML = `<p class="text-gray-500">戦闘ロジックは未実装です。</p>`;
+
+// 🚨 敵を探すロジック
+window.findEnemy = () => {
+    if (userData.hp <= 0) {
+        log('HPが0のため、戦闘を開始できません。日付が変わるのを待ちましょう。', 'text-red-600 font-bold');
+        return;
     }
-}
-window.attackEnemy = () => { showModal('未実装', '戦闘ロジックはまだ実装されていません。'); };
-window.findEnemy = () => { showModal('未実装', '戦闘ロジックはまだ実装されていません。'); };
-function updateCalendarLogUI() { /* 未実装 */ }
 
-
-/** 画面全体に関わるUI更新関数 */
-function updateUI() {
-    // 総合ステータスUIを更新 (HP, 攻撃力, 防御力)
-    updateCharacterStatsUI();
+    // 既に戦闘中の場合は何もしない
+    if (currentEnemies.length > 0) {
+        log('既に敵と遭遇しています。', 'text-yellow-600');
+        return;
+    }
     
-    // 1. ガチャ回数更新 
-    const gachaCount = gachaLog[today] ? gachaLog[today].count : 0;
-    document.getElementById('gacha-count').textContent = gachaCount;
+    const stageEnemies = enemies[currentStage];
+    if (!stageEnemies && enemiesDefeatedInStage < ENEMY_DEFEAT_COUNT_TO_BOSS) {
+        log(`ステージ${currentStage}の雑魚敵データが見つかりません。`, 'text-red-600');
+        return;
+    }
 
-    // 2. ガチャボタンの有効/無効化
-    const isDisabled = gachaCount <= 0;
-    const weaponButton = document.getElementById('gacha-roll-weapon');
-    const petButton = document.getElementById('gacha-roll-pet');
+    currentEnemies = [];
+    const stageMultiplier = Math.pow(1.5, currentStage - 1); // ステージ補正
 
-    if (weaponButton) weaponButton.disabled = isDisabled;
-    if (petButton) petButton.disabled = isDisabled;
+    if (enemiesDefeatedInStage >= ENEMY_DEFEAT_COUNT_TO_BOSS) {
+        // ボス出現
+        const bossData = enemies[`${currentStage}_boss`];
+        if (!bossData) {
+            log(`ステージ${currentStage}のボスデータが見つかりません。ステージ進行を中止します。`, 'text-red-600');
+            return;
+        }
 
-    // 3. スタンプボタンの動作保証
-    document.querySelectorAll('.study-stamp-button').forEach(button => {
-        button.classList.remove('bg-gray-400');
-        button.classList.add('bg-green-500'); 
-        button.disabled = false;
-    });
+        // ボスのステータスをステージ補正
+        const boss = {
+            id: `boss-${currentStage}`,
+            name: bossData.name,
+            image: bossData.image,
+            maxHp: Math.round(bossData.hp * stageMultiplier),
+            hp: Math.round(bossData.hp * stageMultiplier),
+            attack: Math.round(bossData.attack * stageMultiplier),
+            defense: Math.round(bossData.defense * stageMultiplier),
+            category: bossData.category,
+            attackCount: bossData.attackCount,
+            isBoss: true,
+            stage: currentStage
+        };
+        currentEnemies.push(boss);
+        log(`🚨 **ステージ${currentStage}のボス、${boss.name}が出現！**`, 'text-red-700 font-bold');
 
-    // 4. インベントリUIの更新
-    updateInventoryUI(); 
+    } else {
+        // 雑魚敵出現
+        const enemyCount = Math.floor(Math.random() * MAX_ENEMIES_PER_BATTLE) + 1; // 1体から最大3体
+        let names = [];
 
-    // 5. データ保存
+        for (let i = 0; i < enemyCount; i++) {
+            const randomIndex = Math.floor(Math.random() * stageEnemies.length);
+            const selectedEnemyData = stageEnemies[randomIndex];
+
+            // 敵のステータスをステージ補正
+            const newEnemy = {
+                id: `${selectedEnemyData.id}-${Date.now()}-${i}`, // ユニークID
+                name: selectedEnemyData.name,
+                image: selectedEnemyData.image,
+                maxHp: Math.round(selectedEnemyData.hp * stageMultiplier),
+                hp: Math.round(selectedEnemyData.hp * stageMultiplier),
+                attack: Math.round(selectedEnemyData.attack * stageMultiplier),
+                defense: Math.round(selectedEnemyData.defense * stageMultiplier),
+                category: selectedEnemyData.category,
+                attackCount: selectedEnemyData.attackCount,
+                isBoss: false,
+                stage: currentStage
+            };
+            currentEnemies.push(newEnemy);
+            names.push(newEnemy.name);
+        }
+        log(`⚔️ ${names.join('と')} (${enemyCount}体) が出現した！`, 'text-blue-600 font-bold');
+    }
+
+    updateUI();
+};
+
+
+// 🚨 敵を攻撃するロジック (ターン制バトル)
+window.attackEnemy = () => {
+    if (currentEnemies.length === 0 || userData.hp <= 0) {
+        document.getElementById('attack-button').disabled = true;
+        log('戦闘が終了しているか、HPがありません。', 'text-red-500');
+        return;
+    }
+    
+    // --- 1. プレイヤーの攻撃 ---
+    // HPが最も低い敵をターゲットにする
+    const targetEnemy = currentEnemies.reduce((prev, current) => (prev.hp < current.hp ? prev : current));
+
+    const playerDamage = Math.max(1, userData.attack - targetEnemy.defense);
+    targetEnemy.hp = Math.max(0, targetEnemy.hp - playerDamage);
+    log(`**あなた**の攻撃！ ${targetEnemy.name}に **${playerDamage}** のダメージ！`, 'text-blue-700');
+    
+    let enemiesKilled = [];
+
+    if (targetEnemy.hp <= 0) {
+        // 撃破処理（ドロップ、討伐数カウント）
+        const defeatLog = handleDefeat(targetEnemy);
+        log(defeatLog.message, defeatLog.class);
+        enemiesKilled.push(targetEnemy.id);
+    }
+    
+    // 撃破された敵をリストから除去
+    currentEnemies = currentEnemies.filter(e => !enemiesKilled.includes(e.id));
+    
+    // --- 2. 敵の反撃 ---
+    if (currentEnemies.length > 0 && userData.hp > 0) {
+        currentEnemies.forEach(enemy => {
+            for (let i = 0; i < enemy.attackCount; i++) {
+                if (userData.hp <= 0) break; // 既に敗北していたら中断
+                
+                const enemyDamage = Math.max(1, enemy.attack - userData.defense);
+                userData.hp = Math.max(0, userData.hp - enemyDamage);
+                log(`${enemy.name}の反撃${enemy.attackCount > 1 ? `(${i+1}/${enemy.attackCount})` : ''}！ あなたは **${enemyDamage}** のダメージを受けた。`, 'text-red-600');
+            }
+        });
+    }
+
+    // --- 3. 勝敗判定と更新 ---
+    if (userData.hp <= 0) {
+        // プレイヤー敗北
+        userData.hp = 0;
+        currentEnemies = []; // 戦闘終了
+        log('💀 **敗北...** あなたは力尽きた。HPは明日回復します。', 'text-red-800 font-bold');
+    } else if (currentEnemies.length === 0) {
+        // プレイヤー勝利 (残りの敵も倒した場合)
+        log('🎉 **戦闘に勝利した！**', 'text-yellow-600 font-bold');
+    }
+
+    updateUI(); // UIを更新して、敵のHP、プレイヤーのHP、ボタンの状態を反映
+};
+
+/**
+ * 敵を倒したときの処理（報酬ドロップ、ステージ進行）
+ * @param {object} defeatedEnemy - 倒した敵のデータ
+ * @returns {object} ログメッセージとクラス
+ */
+function handleDefeat(defeatedEnemy) {
+    let logMessage = `🎯 **${defeatedEnemy.name}**を撃破した！`;
+    let logClass = 'text-green-600 font-bold';
+    
+    // 敵に応じたドロップ抽選
+    const dropResult = rollDrop(defeatedEnemy.category);
+    if (dropResult) {
+        // 強化素材をインベントリに追加（個数としてカウント）
+        const existingMaterialIndex = userData.inventory.findIndex(item => item.id === dropResult.itemId);
+        if (existingMaterialIndex !== -1) {
+            // 素材は1個ずつインベントリに追加されているため、spliceして新しいアイテムとして追加する
+            // 🚨 ここでは簡単化のため、同じitemIdのアイテムをすべて個数としてカウントするロジックに変更
+            // インベントリの各アイテムを単体として扱う構造のため、素材は単純に追加
+            userData.inventory.push({ id: dropResult.itemId, level: 1, isEquipped: false });
+        } else {
+            userData.inventory.push({ id: dropResult.itemId, level: 1, isEquipped: false });
+        }
+        
+        logMessage += `<br>✨ **報酬ゲット！** ${dropResult.name}をドロップした！`;
+    }
+
+    if (defeatedEnemy.isBoss) {
+        // ボス撃破時
+        currentStage++;
+        enemiesDefeatedInStage = 0;
+        logMessage += `<br>🏆 **ステージ${defeatedEnemy.stage}をクリア！** 次のステージへ進みます。`;
+        logClass = 'text-purple-600 font-extrabold';
+    } else {
+        // 雑魚敵撃破時
+        enemiesDefeatedInStage++;
+        if (enemiesDefeatedInStage === ENEMY_DEFEAT_COUNT_TO_BOSS) {
+            logMessage += `<br>ボスが出現する準備が整いました！`;
+        }
+    }
+    
+    return { message: logMessage, class: logClass };
+}
+
+/** 敵のカテゴリーに基づくドロップ抽選 */
+function rollDrop(category) {
+    const dropRates = ENEMY_DROP_GROUPS[category];
+    if (!dropRates) return null;
+
+    const totalWeight = Object.values(dropRates).reduce((sum, weight) => sum + weight, 0);
+    let randomNum = Math.random() * totalWeight;
+
+    for (const rarity in dropRates) {
+        randomNum -= dropRates[rarity];
+        if (randomNum <= 0) {
+            return REINFORCEMENT_ITEMS_BY_RARITY[rarity];
+        }
+    }
+    return null;
+}
+
+// --- 初期化処理 ---
+function updateUI() {
+    updateCharacterStatsUI();
+    updateInventoryUI();
+    updateEnemyUI(); 
     saveData();
 }
 
-
-// --- イベントハンドラーとメインロジック ---
-
-document.addEventListener('DOMContentLoaded', () => {
+// 初期ロード時にUIを更新
+window.onload = () => {
     loadData();
-
-    // 1. タブのイベントリスナー (index.htmlのonclick属性で対応済み)
-    
-    // 2. スタンプ機能のイベントリスナー
-    document.getElementById('study-stamps').addEventListener('click', (event) => {
-        const stampButton = event.target.closest('.study-stamp-button');
-
-        if (stampButton && !stampButton.disabled) {
-            const content = stampButton.getAttribute('data-content');
-            
-            // 処理開始時にボタンを無効化し、連続タップを防ぐ
-            stampButton.disabled = true;
-            
-            gachaLog[today].count += 1; 
-            
-            if (!gachaLog[today].studyContent.includes(content)) {
-                gachaLog[today].studyContent.push(content); 
-            }
-            
-            showModal('スタンプゲット！', `今日もがんばったね！<br>ガチャ回数が **1回** 増えたよ！`);
-            
-            updateUI(); 
-
-            setTimeout(() => {
-                stampButton.disabled = false;
-            }, 500);
-        }
-    });
-
-    // 3. ガチャ機能のイベントリスナー (修正: rollGacha関数を呼び出す)
-    document.getElementById('gacha-controls').addEventListener('click', (event) => {
-        const weaponButton = event.target.closest('#gacha-roll-weapon');
-        const petButton = event.target.closest('#gacha-roll-pet');
-
-        if (weaponButton) {
-            window.rollGacha('weapon'); // 武器・防具ガチャを実行
-        } else if (petButton) {
-            window.rollGacha('pet'); // ペットガチャを実行
-        }
-    });
-
-    updateUI(); 
-    
-    // 画面ロード時に最初のタブ（ガチャ）を強制的に表示
-    const initialTabButton = document.querySelector('.tab-button.active');
-    if (initialTabButton) {
-         window.showTab(initialTabButton, 'gacha');
+    // ページロード時のタブ表示を「たたかう」にする
+    const battleButton = document.querySelector('.tab-button[onclick*="battle"]');
+    if(battleButton) {
+        window.showTab(battleButton, 'battle');
     }
-});
+    updateUI();
+};
