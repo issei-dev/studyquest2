@@ -11,11 +11,11 @@ const ENHANCEMENT_RATE = 1.2;
 const PET_GROWTH_RATE = 0.001;
 const MAX_ENEMIES_PER_BATTLE = 3; // 同時に出現する雑魚敵の最大数
 
-// ガチャのレアリティ抽選確率を定義（合計100%になるように調整）
+// 🚨 ガチャのレアリティ抽選確率を定義（合計100%になるように調整）
 const GACHA_RARITY_GROUPS = {
-    'weapon': { 'N': 50, 'R': 30, 'SR': 15, 'UR': 4, 'LE': 1 },
-    'pet': { 'N': 40, 'R': 35, 'SR': 20, 'UR': 4, 'LE': 1 },
-    'armor': { 'N': 50, 'R': 30, 'SR': 15, 'UR': 4, 'LE': 1 }
+    'weapon': { 'N': 50, 'R': 40, 'SR': 7, 'UR': 2.5, 'LE': 0.5 },
+    'pet': { 'N': 50, 'R': 40, 'SR': 7, 'UR': 2.5, 'LE': 0.5 },
+    'armor': { 'N': 50, 'R': 40, 'SR': 7, 'UR': 2.5, 'LE': 0.5 }
 };
 
 // 敵のカテゴリー別ドロップ率と強化アイテムの対応
