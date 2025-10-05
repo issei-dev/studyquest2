@@ -694,4 +694,140 @@ function updateCalendarLogUI() {
     if (logList.children.length === 0) {
         logList.innerHTML = `<li class="text-gray-500">まだ勉強の記録がありません。</li>`;
     }
+    /**
+ * ガチャを引く処理を実行する
+ * @param {string} type - 'weapon' または 'pet'
+ */
+window.rollGacha = (type) => {
+    if ((gachaLog[today]?.count || 0) <= 0) {
+        showModal('エラー', 'ガチャ回数が足りません。勉強スタンプを押して回数を増やしましょう！');
+        return;
+    }
+    
+    const resultItemData = getRandomItem(type);
+    
+    if (!resultItemData) {
+        showModal('エラー', 'アイテムが見つかりませんでした。');
+        return;
+    }
+    
+    // ガチャ回数を1回消費
+    gachaLog[today].count -= 1;
+    
+    // インベントリにアイテムを追加
+    const newItem = {
+        id: resultItemData.id,
+        level: 1, // 初期レベルは1
+        isEquipped: false
+    };
+    userData.inventory.push(newItem);
+
+    // レアリティカラー設定 (モーダル用)
+    let rarityColorClass = '';
+    if (resultItemData.rarity === 'R') rarityColorClass = 'text-blue-500';
+    else if (resultItemData.rarity === 'SR') rarityColorClass = 'text-purple-500';
+    else if (resultItemData.rarity === 'UR') rarityColorClass = 'text-yellow-500';
+    else if (resultItemData.rarity === 'LE') rarityColorClass = 'text-red-500';
+    
+    // 結果モーダルを表示
+    showModal(
+        'ガチャ結果！', 
+        `<div class="text-center">
+            <img src="${resultItemData.image}" alt="${resultItemData.name}" class="w-20 h-20 mx-auto mb-3 rounded-full border-2 border-dashed ${rarityColorClass.replace('text', 'border')}">
+            <p class="font-bold text-lg">🎉 ${resultItemData.rarity} ゲット！ 🎉</p>
+            <p class="text-xl ${rarityColorClass}">${resultItemData.name}</p>
+        </div>`
+    );
+
+    updateUI(); 
+};
+      // 3. ガチャ機能のイベントリスナーを修正
+    document.getElementById('gacha-controls').addEventListener('click', (event) => {
+        const weaponButton = event.target.closest('#gacha-roll-weapon');
+        const petButton = event.target.closest('#gacha-roll-pet');
+
+        if (weaponButton) {
+            window.rollGacha('weapon'); // 武器・防具ガチャを実行
+        } else if (petButton) {
+            window.rollGacha('pet'); // ペットガチャを実行
+        }
+    });
+
+    updateUI(); 
+    
+    // 画面ロード時に最初のタブ（ガチャ）を強制的に表示
+    window.showTab(document.querySelector('.tab-button.active'), 'gacha');
+    /**
+ * ガチャを引く処理を実行する
+ * @param {string} type - 'weapon' または 'pet'
+ */
+window.rollGacha = (type) => {
+    if ((gachaLog[today]?.count || 0) <= 0) {
+        showModal('エラー', 'ガチャ回数が足りません。勉強スタンプを押して回数を増やしましょう！');
+        return;
+    }
+    
+    const resultItemData = getRandomItem(type);
+    
+    if (!resultItemData) {
+        showModal('エラー', 'アイテムが見つかりませんでした。');
+        return;
+    }
+    
+    // ガチャ回数を1回消費
+    gachaLog[today].count -= 1;
+
+    // 🚨 修正ロジック: インベントリをチェックし、同一IDのアイテムがあればレベルアップ
+    let isDuplicate = false;
+    let enhancedItem = null;
+
+    // 既に持っているアイテムの中から、同一IDのものを探す（ここでは最初に見つかったものを対象とする）
+    const existingItemIndex = userData.inventory.findIndex(invItem => invItem.id === resultItemData.id);
+
+    if (existingItemIndex !== -1) {
+        // 1. 同一アイテムを発見した場合、レベルを+1
+        enhancedItem = userData.inventory[existingItemIndex];
+        enhancedItem.level = (enhancedItem.level || 1) + 1;
+        isDuplicate = true;
+    } else {
+        // 2. 新規アイテムとしてインベントリに追加
+        const newItem = {
+            id: resultItemData.id,
+            level: 1, // 初期レベルは1
+            isEquipped: false
+        };
+        userData.inventory.push(newItem);
+        enhancedItem = newItem;
+    }
+
+    // レアリティカラー設定 (モーダル用)
+    let rarityColorClass = '';
+    if (resultItemData.rarity === 'R') rarityColorClass = 'text-blue-500';
+    else if (resultItemData.rarity === 'SR') rarityColorClass = 'text-purple-500';
+    else if (resultItemData.rarity === 'UR') rarityColorClass = 'text-yellow-500';
+    else if (resultItemData.rarity === 'LE') rarityColorClass = 'text-red-500';
+    
+    let modalMessage = '';
+    if (isDuplicate) {
+        // 重複時のメッセージ
+        modalMessage = `<div class="text-center">
+            <img src="${resultItemData.image}" alt="${resultItemData.name}" class="w-20 h-20 mx-auto mb-3 rounded-full border-2 border-dashed ${rarityColorClass.replace('text', 'border')}">
+            <p class="font-bold text-lg">✨ レベルアップ！ ✨</p>
+            <p class="text-xl ${rarityColorClass}">${resultItemData.name}</p>
+            <p class="mt-2 text-sm text-gray-700">現在のレベル: **+${enhancedItem.level - 1}** が **+${enhancedItem.level}** に！</p>
+        </div>`;
+    } else {
+        // 新規獲得時のメッセージ
+        modalMessage = `<div class="text-center">
+            <img src="${resultItemData.image}" alt="${resultItemData.name}" class="w-20 h-20 mx-auto mb-3 rounded-full border-2 border-dashed ${rarityColorClass.replace('text', 'border')}">
+            <p class="font-bold text-lg">🎉 ${resultItemData.rarity} ゲット！ 🎉</p>
+            <p class="text-xl ${rarityColorClass}">${resultItemData.name}</p>
+        </div>`;
+    }
+
+    // 結果モーダルを表示
+    showModal('ガチャ結果！', modalMessage);
+
+    updateUI(); 
+};
 }
