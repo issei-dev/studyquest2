@@ -1,5 +1,5 @@
 // --------------------------------------------------------------------------
-// 🌟 Ver0.30: 全てのアイテム/ペット/敵データと機能修正を反映 🌟
+// 🌟 Ver0.31: 動作エラー修正、複数装備スロット対応、画像URL統一 🌟
 // --------------------------------------------------------------------------
 
 // --- 初期データと変数 ---
@@ -10,18 +10,18 @@ const BASE_STATS_DEFENSE = 5;
 const ENHANCEMENT_RATE = 1.2;
 const PET_GROWTH_RATE = 0.001;
 
-// 🚨 新規追加: ガチャのレアリティ抽選確率を定義（合計100%になるように調整）
+// ガチャのレアリティ抽選確率を定義（合計100%になるように調整）
 const GACHA_RARITY_GROUPS = {
     'weapon': { 'N': 50, 'R': 30, 'SR': 15, 'UR': 4, 'LE': 1 },
     'pet': { 'N': 40, 'R': 35, 'SR': 20, 'UR': 4, 'LE': 1 },
     'armor': { 'N': 50, 'R': 30, 'SR': 15, 'UR': 4, 'LE': 1 }
 };
 
-// 🚨 新規追加: 敵のカテゴリー別ドロップ率と強化アイテムの対応
+// 敵のカテゴリー別ドロップ率と強化アイテムの対応
 const ENEMY_DROP_GROUPS = {
     'A': { 'N': 95, 'R': 5, 'SR': 0, 'UR': 0 }, // N:95%, R:5%
     'B': { 'N': 50, 'R': 40, 'SR': 10, 'UR': 0 }, // N:50%, R:40%, SR:10%
-    'C': { 'N': 0, 'R': 90, 'SR': 10, 'UR': 0 }  // R:90%, SR:10%
+    'C': { 'N': 0, 'R': 90, 'SR': 10, 'UR': 0 } // R:90%, SR:10%
 };
 const REINFORCEMENT_ITEMS_BY_RARITY = {
     'N': { name: 'きょうかのかけら（小）', levelBonus: 1, itemId: 'M001' },
@@ -38,123 +38,123 @@ let userData = {
     baseDefense: BASE_STATS_DEFENSE,
     attack: BASE_STATS_ATTACK,
     defense: BASE_STATS_DEFENSE,
-    inventory: [] 
+    inventory: []
 };
 
 // 日別スタンプ記録とガチャ回数 (countは利用可能回数)
-let gachaLog = {}; 
+let gachaLog = {};
 
-// --- アイテムデータ ---
+// --- アイテムデータ (画像URLをSQ2-w001.pngシリーズに統一) ---
 const items = [
     // 武器 (Weapon)
     { id: 'W001', name: '木の剣', type: 'weapon', attackBonus: 2, defenseBonus: 0, hpBonus: 0, rarity: 'N', image: 'SQ2-w001.png' },
     { id: 'W002', name: '木の斧', type: 'weapon', attackBonus: 1, defenseBonus: 1, hpBonus: 0, rarity: 'N', image: 'SQ2-w002.png' },
     { id: 'W003', name: '木の杖', type: 'weapon', attackBonus: 1, defenseBonus: 0, hpBonus: 1, rarity: 'N', image: 'SQ2-w003.png' },
     { id: 'W004', name: '木の盾', type: 'weapon', attackBonus: 0, defenseBonus: 2, hpBonus: 0, rarity: 'N', image: 'SQ2-w004.png' },
-    { id: 'W005', name: '石の剣', type: 'weapon', attackBonus: 1, defenseBonus: 0, hpBonus: 1, rarity: 'N', image: 'https://placehold.co/80x80/7e7e7e/ffffff?text=石剣' },
-    { id: 'W006', name: '石の斧', type: 'weapon', attackBonus: 0, defenseBonus: 1, hpBonus: 1, rarity: 'N', image: 'https://placehold.co/80x80/7e7e7e/ffffff?text=石斧' },
-    { id: 'W007', name: '石の槍', type: 'weapon', attackBonus: 0, defenseBonus: 0, hpBonus: 2, rarity: 'N', image: 'https://placehold.co/80x80/7e7e7e/ffffff?text=石槍' },
-    { id: 'W008', name: '石の盾', type: 'weapon', attackBonus: 0, defenseBonus: 2, hpBonus: 0, rarity: 'N', image: 'https://placehold.co/80x80/7e7e7e/ffffff?text=石盾' },
+    { id: 'W005', name: '石の剣', type: 'weapon', attackBonus: 1, defenseBonus: 0, hpBonus: 1, rarity: 'N', image: 'SQ2-w005.png' },
+    { id: 'W006', name: '石の斧', type: 'weapon', attackBonus: 0, defenseBonus: 1, hpBonus: 1, rarity: 'N', image: 'SQ2-w006.png' },
+    { id: 'W007', name: '石の槍', type: 'weapon', attackBonus: 0, defenseBonus: 0, hpBonus: 2, rarity: 'N', image: 'SQ2-w007.png' },
+    { id: 'W008', name: '石の盾', type: 'weapon', attackBonus: 0, defenseBonus: 2, hpBonus: 0, rarity: 'N', image: 'SQ2-w008.png' },
     
-    { id: 'W009', name: '鉄の剣', type: 'weapon', attackBonus: 8, defenseBonus: 0, hpBonus: 0, rarity: 'R', image: 'https://placehold.co/80x80/808080/ffffff?text=鉄剣' },
-    { id: 'W010', name: '鉄の斧', type: 'weapon', attackBonus: 4, defenseBonus: 4, hpBonus: 0, rarity: 'R', image: 'https://placehold.co/80x80/808080/ffffff?text=鉄斧' },
-    { id: 'W011', name: '鉄の槍', type: 'weapon', attackBonus: 4, defenseBonus: 0, hpBonus: 4, rarity: 'R', image: 'https://placehold.co/80x80/808080/ffffff?text=鉄槍' },
-    { id: 'W012', name: '鉄の盾', type: 'weapon', attackBonus: 0, defenseBonus: 8, hpBonus: 0, rarity: 'R', image: 'https://placehold.co/80x80/808080/ffffff?text=鉄盾' },
-    { id: 'W013', name: '金の剣', type: 'weapon', attackBonus: 32, defenseBonus: 0, hpBonus: 0, rarity: 'SR', image: 'https://placehold.co/80x80/FFD700/000000?text=金剣' },
-    { id: 'W014', name: '金の斧', type: 'weapon', attackBonus: 16, defenseBonus: 16, hpBonus: 0, rarity: 'SR', image: 'https://placehold.co/80x80/FFD700/000000?text=金斧' },
-    { id: 'W015', name: '金の槍', type: 'weapon', attackBonus: 16, defenseBonus: 0, hpBonus: 16, rarity: 'SR', image: 'https://placehold.co/80x80/FFD700/000000?text=金槍' },
-    { id: 'W016', name: '金の盾', type: 'weapon', attackBonus: 0, defenseBonus: 32, hpBonus: 0, rarity: 'SR', image: 'https://placehold.co/80x80/FFD700/000000?text=金盾' },
+    { id: 'W009', name: '鉄の剣', type: 'weapon', attackBonus: 8, defenseBonus: 0, hpBonus: 0, rarity: 'R', image: 'SQ2-w009.png' },
+    { id: 'W010', name: '鉄の斧', type: 'weapon', attackBonus: 4, defenseBonus: 4, hpBonus: 0, rarity: 'R', image: 'SQ2-w010.png' },
+    { id: 'W011', name: '鉄の槍', type: 'weapon', attackBonus: 4, defenseBonus: 0, hpBonus: 4, rarity: 'R', image: 'SQ2-w011.png' },
+    { id: 'W012', name: '鉄の盾', type: 'weapon', attackBonus: 0, defenseBonus: 8, hpBonus: 0, rarity: 'R', image: 'SQ2-w012.png' },
+    { id: 'W013', name: '金の剣', type: 'weapon', attackBonus: 32, defenseBonus: 0, hpBonus: 0, rarity: 'SR', image: 'SQ2-w013.png' },
+    { id: 'W014', name: '金の斧', type: 'weapon', attackBonus: 16, defenseBonus: 16, hpBonus: 0, rarity: 'SR', image: 'SQ2-w014.png' },
+    { id: 'W015', name: '金の槍', type: 'weapon', attackBonus: 16, defenseBonus: 0, hpBonus: 16, rarity: 'SR', image: 'SQ2-w015.png' },
+    { id: 'W016', name: '金の盾', type: 'weapon', attackBonus: 0, defenseBonus: 32, hpBonus: 0, rarity: 'SR', image: 'SQ2-w016.png' },
     
-    { id: 'W017', name: 'ダイヤモンドの剣', type: 'weapon', attackBonus: 128, defenseBonus: 0, hpBonus: 0, rarity: 'UR', image: 'https://placehold.co/80x80/B9F2FF/000000?text=💎剣' },
-    { id: 'W018', name: 'ダイヤモンドの斧', type: 'weapon', attackBonus: 64, defenseBonus: 64, hpBonus: 0, rarity: 'UR', image: 'https://placehold.co/80x80/B9F2FF/000000?text=💎斧' },
-    { id: 'W019', name: 'ダイヤモンドの槍', type: 'weapon', attackBonus: 64, defenseBonus: 0, hpBonus: 64, rarity: 'UR', image: 'https://placehold.co/80x80/B9F2FF/000000?text=💎槍' },
-    { id: 'W020', name: 'ダイヤモンドの盾', type: 'weapon', attackBonus: 0, defenseBonus: 128, hpBonus: 0, rarity: 'UR', image: 'https://placehold.co/80x80/B9F2FF/000000?text=💎盾' },
+    { id: 'W017', name: 'ダイヤモンドの剣', type: 'weapon', attackBonus: 128, defenseBonus: 0, hpBonus: 0, rarity: 'UR', image: 'SQ2-w017.png' },
+    { id: 'W018', name: 'ダイヤモンドの斧', type: 'weapon', attackBonus: 64, defenseBonus: 64, hpBonus: 0, rarity: 'UR', image: 'SQ2-w018.png' },
+    { id: 'W019', name: 'ダイヤモンドの槍', type: 'weapon', attackBonus: 64, defenseBonus: 0, hpBonus: 64, rarity: 'UR', image: 'SQ2-w019.png' },
+    { id: 'W020', name: 'ダイヤモンドの盾', type: 'weapon', attackBonus: 0, defenseBonus: 128, hpBonus: 0, rarity: 'UR', image: 'SQ2-w020.png' },
     
-    { id: 'W021', name: 'ブラッククリスタルの剣', type: 'weapon', attackBonus: 512, defenseBonus: 0, hpBonus: 0, rarity: 'LE', image: 'https://placehold.co/80x80/333333/ffffff?text=BC剣' },
-    { id: 'W022', name: 'ブラッククリスタルの斧', type: 'weapon', attackBonus: 256, defenseBonus: 256, hpBonus: 0, rarity: 'LE', image: 'https://placehold.co/80x80/333333/ffffff?text=BC斧' },
-    { id: 'W023', name: 'ブラッククリスタルの槍', type: 'weapon', attackBonus: 256, defenseBonus: 0, hpBonus: 256, rarity: 'LE', image: 'https://placehold.co/80x80/333333/ffffff?text=BC槍' },
-    { id: 'W024', name: 'ブラッククリスタルの盾', type: 'weapon', attackBonus: 0, defenseBonus: 512, hpBonus: 0, rarity: 'LE', image: 'https://placehold.co/80x80/333333/ffffff?text=BC盾' },
+    { id: 'W021', name: 'ブラッククリスタルの剣', type: 'weapon', attackBonus: 512, defenseBonus: 0, hpBonus: 0, rarity: 'LE', image: 'SQ2-w021.png' },
+    { id: 'W022', name: 'ブラッククリスタルの斧', type: 'weapon', attackBonus: 256, defenseBonus: 256, hpBonus: 0, rarity: 'LE', image: 'SQ2-w022.png' },
+    { id: 'W023', name: 'ブラッククリスタルの槍', type: 'weapon', attackBonus: 256, defenseBonus: 0, hpBonus: 256, rarity: 'LE', image: 'SQ2-w023.png' },
+    { id: 'W024', name: 'ブラッククリスタルの盾', type: 'weapon', attackBonus: 0, defenseBonus: 512, hpBonus: 0, rarity: 'LE', image: 'SQ2-w024.png' },
     
     // 防具 (Armor)
-    { id: 'A001', name: '木の鎧', type: 'armor', attackBonus: 0, defenseBonus: 1, hpBonus: 10, rarity: 'N', image: 'https://placehold.co/80x80/a0522d/ffffff?text=木鎧' },
-    { id: 'A002', name: '鉄の鎧', type: 'armor', attackBonus: 0, defenseBonus: 4, hpBonus: 40, rarity: 'R', image: 'https://placehold.co/80x80/808080/ffffff?text=鉄鎧' },
-    { id: 'A003', name: '金の鎧', type: 'armor', attackBonus: 0, defenseBonus: 16, hpBonus: 160, rarity: 'SR', image: 'https://placehold.co/80x80/FFD700/000000?text=金鎧' },
-    { id: 'A004', name: 'ダイヤモンドの鎧', type: 'armor', attackBonus: 0, defenseBonus: 64, hpBonus: 640, rarity: 'UR', image: 'https://placehold.co/80x80/B9F2FF/000000?text=💎鎧' },
-    { id: 'A005', name: 'ブラッククリスタルの鎧', type: 'armor', attackBonus: 0, defenseBonus: 256, hpBonus: 2560, rarity: 'LE', image: 'https://placehold.co/80x80/333333/ffffff?text=BC鎧' },
-    { id: 'A006', name: '布の鎧', type: 'armor', attackBonus: 0, defenseBonus: 0, hpBonus: 20, rarity: 'N', image: 'https://placehold.co/80x80/d2b48c/ffffff?text=布鎧' },
-    { id: 'A007', name: '葉っぱの鎧', type: 'armor', attackBonus: 0, defenseBonus: 2, hpBonus: 0, rarity: 'N', image: 'https://placehold.co/80x80/556B2F/ffffff?text=葉鎧' },
-    { id: 'A008', name: '火の鎧', type: 'armor', attackBonus: 2, defenseBonus: 4, hpBonus: 20, rarity: 'R', image: 'https://placehold.co/80x80/FF4500/ffffff?text=火鎧' },
-    { id: 'A009', name: '水の鎧', type: 'armor', attackBonus: 4, defenseBonus: 2, hpBonus: 20, rarity: 'R', image: 'https://placehold.co/80x80/4682B4/ffffff?text=水鎧' },
-    { id: 'A010', name: '風の鎧', type: 'armor', attackBonus: 4, defenseBonus: 4, hpBonus: 0, rarity: 'R', image: 'https://placehold.co/80x80/90EE90/000000?text=風鎧' },
-    { id: 'A011', name: '雷の鎧', type: 'armor', attackBonus: 2, defenseBonus: 4, hpBonus: 20, rarity: 'R', image: 'https://placehold.co/80x80/DAA520/000000?text=雷鎧' },
-    { id: 'A012', name: '石の鎧', type: 'armor', attackBonus: 0, defenseBonus: 2, hpBonus: 0, rarity: 'N', image: 'https://placehold.co/80x80/7e7e7e/ffffff?text=石鎧' },
+    { id: 'A001', name: '木の鎧', type: 'armor', attackBonus: 0, defenseBonus: 1, hpBonus: 10, rarity: 'N', image: 'SQ2-a001.png' },
+    { id: 'A002', name: '鉄の鎧', type: 'armor', attackBonus: 0, defenseBonus: 4, hpBonus: 40, rarity: 'R', image: 'SQ2-a002.png' },
+    { id: 'A003', name: '金の鎧', type: 'armor', attackBonus: 0, defenseBonus: 16, hpBonus: 160, rarity: 'SR', image: 'SQ2-a003.png' },
+    { id: 'A004', name: 'ダイヤモンドの鎧', type: 'armor', attackBonus: 0, defenseBonus: 64, hpBonus: 640, rarity: 'UR', image: 'SQ2-a004.png' },
+    { id: 'A005', name: 'ブラッククリスタルの鎧', type: 'armor', attackBonus: 0, defenseBonus: 256, hpBonus: 2560, rarity: 'LE', image: 'SQ2-a005.png' },
+    { id: 'A006', name: '布の鎧', type: 'armor', attackBonus: 0, defenseBonus: 0, hpBonus: 20, rarity: 'N', image: 'SQ2-a006.png' },
+    { id: 'A007', name: '葉っぱの鎧', type: 'armor', attackBonus: 0, defenseBonus: 2, hpBonus: 0, rarity: 'N', image: 'SQ2-a007.png' },
+    { id: 'A008', name: '火の鎧', type: 'armor', attackBonus: 2, defenseBonus: 4, hpBonus: 20, rarity: 'R', image: 'SQ2-a008.png' },
+    { id: 'A009', name: '水の鎧', type: 'armor', attackBonus: 4, defenseBonus: 2, hpBonus: 20, rarity: 'R', image: 'SQ2-a009.png' },
+    { id: 'A010', name: '風の鎧', type: 'armor', attackBonus: 4, defenseBonus: 4, hpBonus: 0, rarity: 'R', image: 'SQ2-a010.png' },
+    { id: 'A011', name: '雷の鎧', type: 'armor', attackBonus: 2, defenseBonus: 4, hpBonus: 20, rarity: 'R', image: 'SQ2-a011.png' },
+    { id: 'A012', name: '石の鎧', type: 'armor', attackBonus: 0, defenseBonus: 2, hpBonus: 0, rarity: 'N', image: 'SQ2-a012.png' },
 
-    // ペット (Pet - Percent Bonusとして設定)
-    { id: 'P001', name: 'スライム', type: 'pet', attackPercentBonus: 0.02, defensePercentBonus: 0.00, hpPercentBonus: 0.00, rarity: 'N', image: 'https://placehold.co/80x80/87ceeb/ffffff?text=スライム' }, 
-    { id: 'P002', name: 'リトルキャット', type: 'pet', attackPercentBonus: 0.00, defensePercentBonus: 0.00, hpPercentBonus: 0.02, rarity: 'N', image: 'https://placehold.co/80x80/E9967A/ffffff?text=🐈' },
-    { id: 'P003', name: 'リトルドッグ', type: 'pet', attackPercentBonus: 0.00, defensePercentBonus: 0.02, hpPercentBonus: 0.00, rarity: 'N', image: 'https://placehold.co/80x80/DEB887/ffffff?text=🐕' },
-    { id: 'P004', name: 'ヒヨコ', type: 'pet', attackPercentBonus: 0.01, defensePercentBonus: 0.00, hpPercentBonus: 0.01, rarity: 'N', image: 'https://placehold.co/80x80/FFD700/000000?text=🐣' },
-    { id: 'P005', name: 'リトルラビット', type: 'pet', attackPercentBonus: 0.00, defensePercentBonus: 0.01, hpPercentBonus: 0.01, rarity: 'N', image: 'https://placehold.co/80x80/F08080/ffffff?text=🐇' },
-    { id: 'P006', name: 'シープ', type: 'pet', attackPercentBonus: 0.01, defensePercentBonus: 0.01, hpPercentBonus: 0.00, rarity: 'N', image: 'https://placehold.co/80x80/F5F5DC/000000?text=🐑' },
-    { id: 'P007', name: 'ホース', type: 'pet', attackPercentBonus: 0.01, defensePercentBonus: 0.00, hpPercentBonus: 0.01, rarity: 'N', image: 'https://placehold.co/80x80/A0522D/ffffff?text=🐴' },
+    // ペット (Pet)
+    { id: 'P001', name: 'スライム', type: 'pet', attackPercentBonus: 0.02, defensePercentBonus: 0.00, hpPercentBonus: 0.00, rarity: 'N', image: 'SQ2-p001.png' },
+    { id: 'P002', name: 'リトルキャット', type: 'pet', attackPercentBonus: 0.00, defensePercentBonus: 0.00, hpPercentBonus: 0.02, rarity: 'N', image: 'SQ2-p002.png' },
+    { id: 'P003', name: 'リトルドッグ', type: 'pet', attackPercentBonus: 0.00, defensePercentBonus: 0.02, hpPercentBonus: 0.00, rarity: 'N', image: 'SQ2-p003.png' },
+    { id: 'P004', name: 'ヒヨコ', type: 'pet', attackPercentBonus: 0.01, defensePercentBonus: 0.00, hpPercentBonus: 0.01, rarity: 'N', image: 'SQ2-p004.png' },
+    { id: 'P005', name: 'リトルラビット', type: 'pet', attackPercentBonus: 0.00, defensePercentBonus: 0.01, hpPercentBonus: 0.01, rarity: 'N', image: 'SQ2-p005.png' },
+    { id: 'P006', name: 'シープ', type: 'pet', attackPercentBonus: 0.01, defensePercentBonus: 0.01, hpPercentBonus: 0.00, rarity: 'N', image: 'SQ2-p006.png' },
+    { id: 'P007', name: 'ホース', type: 'pet', attackPercentBonus: 0.01, defensePercentBonus: 0.00, hpPercentBonus: 0.01, rarity: 'N', image: 'SQ2-p007.png' },
     
-    { id: 'P008', name: 'ひのせいれい', type: 'pet', attackPercentBonus: 0.04, defensePercentBonus: 0.04, hpPercentBonus: 0.00, rarity: 'R', image: 'https://placehold.co/80x80/FF4500/ffffff?text=🔥精' },
-    { id: 'P009', name: 'みずのせいれい', type: 'pet', attackPercentBonus: 0.04, defensePercentBonus: 0.00, hpPercentBonus: 0.04, rarity: 'R', image: 'https://placehold.co/80x80/4682B4/ffffff?text=💧精' },
-    { id: 'P010', name: 'かぜのせいれい', type: 'pet', attackPercentBonus: 0.08, defensePercentBonus: 0.00, hpPercentBonus: 0.00, rarity: 'R', image: 'https://placehold.co/80x80/90EE90/000000?text=🍃精' },
-    { id: 'P011', name: 'つちのせいれい', type: 'pet', attackPercentBonus: 0.00, defensePercentBonus: 0.00, hpPercentBonus: 0.08, rarity: 'R', image: 'https://placehold.co/80x80/8B4513/ffffff?text=⛰️精' },
+    { id: 'P008', name: 'ひのせいれい', type: 'pet', attackPercentBonus: 0.04, defensePercentBonus: 0.04, hpPercentBonus: 0.00, rarity: 'R', image: 'SQ2-p008.png' },
+    { id: 'P009', name: 'みずのせいれい', type: 'pet', attackPercentBonus: 0.04, defensePercentBonus: 0.00, hpPercentBonus: 0.04, rarity: 'R', image: 'SQ2-p009.png' },
+    { id: 'P010', name: 'かぜのせいれい', type: 'pet', attackPercentBonus: 0.08, defensePercentBonus: 0.00, hpPercentBonus: 0.00, rarity: 'R', image: 'SQ2-p010.png' },
+    { id: 'P011', name: 'つちのせいれい', type: 'pet', attackPercentBonus: 0.00, defensePercentBonus: 0.00, hpPercentBonus: 0.08, rarity: 'R', image: 'SQ2-p011.png' },
     
-    { id: 'P012', name: 'グリフォン', type: 'pet', attackPercentBonus: 0.15, defensePercentBonus: 0.07, hpPercentBonus: 0.10, rarity: 'SR', image: 'https://placehold.co/80x80/FFB6C1/000000?text=グリ' },
-    { id: 'P013', name: 'キメラ', type: 'pet', attackPercentBonus: 0.11, defensePercentBonus: 0.10, hpPercentBonus: 0.11, rarity: 'SR', image: 'https://placehold.co/80x80/DAA520/000000?text=キメ' },
-    { id: 'P014', name: 'リトルドラゴン', type: 'pet', attackPercentBonus: 0.10, defensePercentBonus: 0.15, hpPercentBonus: 0.07, rarity: 'SR', image: 'https://placehold.co/80x80/ff4500/ffffff?text=幼竜' },
+    { id: 'P012', name: 'グリフォン', type: 'pet', attackPercentBonus: 0.15, defensePercentBonus: 0.07, hpPercentBonus: 0.10, rarity: 'SR', image: 'SQ2-p012.png' },
+    { id: 'P013', name: 'キメラ', type: 'pet', attackPercentBonus: 0.11, defensePercentBonus: 0.10, hpPercentBonus: 0.11, rarity: 'SR', image: 'SQ2-p013.png' },
+    { id: 'P014', name: 'リトルドラゴン', type: 'pet', attackPercentBonus: 0.10, defensePercentBonus: 0.15, hpPercentBonus: 0.07, rarity: 'SR', image: 'SQ2-p014.png' },
     
-    { id: 'P015', name: 'ケルベロス', type: 'pet', attackPercentBonus: 0.64, defensePercentBonus: 0.32, hpPercentBonus: 0.32, rarity: 'UR', image: 'https://placehold.co/80x80/404040/ffffff?text=🐕🐕🐕' },
-    { id: 'P016', name: 'ユニコーン', type: 'pet', attackPercentBonus: 0.32, defensePercentBonus: 0.32, hpPercentBonus: 0.64, rarity: 'UR', image: 'https://placehold.co/80x80/ADD8E6/000000?text=🦄' },
+    { id: 'P015', name: 'ケルベロス', type: 'pet', attackPercentBonus: 0.64, defensePercentBonus: 0.32, hpPercentBonus: 0.32, rarity: 'UR', image: 'SQ2-p015.png' },
+    { id: 'P016', name: 'ユニコーン', type: 'pet', attackPercentBonus: 0.32, defensePercentBonus: 0.32, hpPercentBonus: 0.64, rarity: 'UR', image: 'SQ2-p016.png' },
     
-    { id: 'P017', name: 'フェニックス', type: 'pet', attackPercentBonus: 0.32, defensePercentBonus: 0.32, hpPercentBonus: 0.64, rarity: 'LE', image: 'https://placehold.co/80x80/FF6347/ffffff?text=不死鳥' }, 
+    { id: 'P017', name: 'フェニックス', type: 'pet', attackPercentBonus: 0.32, defensePercentBonus: 0.32, hpPercentBonus: 0.64, rarity: 'LE', image: 'SQ2-p017.png' },
 
     // 強化アイテム (Material)
-    { id: 'M001', name: 'きょうかのかけら（小）', type: 'material', rarity: 'N', levelBonus: 1, image: 'https://placehold.co/80x80/CD853F/ffffff?text=小破片' },
-    { id: 'M002', name: 'きょうかのかけら（中）', type: 'material', rarity: 'R', levelBonus: 2, image: 'https://placehold.co/80x80/A0522D/ffffff?text=中破片' },
-    { id: 'M003', name: 'きょうかのかけら（大）', type: 'material', rarity: 'SR', levelBonus: 3, image: 'https://placehold.co/80x80/8B4513/ffffff?text=大破片' },
-    { id: 'M004', name: 'きょうかのかたまり（小）', type: 'material', rarity: 'UR', levelBonus: 4, image: 'https://placehold.co/80x80/5C4033/ffffff?text=小塊' }
+    { id: 'M001', name: 'きょうかのかけら（小）', type: 'material', rarity: 'N', levelBonus: 1, image: 'SQ2-m001.png' },
+    { id: 'M002', name: 'きょうかのかけら（中）', type: 'material', rarity: 'R', levelBonus: 2, image: 'SQ2-m002.png' },
+    { id: 'M003', name: 'きょうかのかけら（大）', type: 'material', rarity: 'SR', levelBonus: 3, image: 'SQ2-m003.png' },
+    { id: 'M004', name: 'きょうかのかたまり（小）', type: 'material', rarity: 'UR', levelBonus: 4, image: 'SQ2-m004.png' }
 ];
 
 // --- 戦闘関連データ ---
 let currentStage = 1;
-let enemiesDefeatedInStage = 0; 
-const ENEMY_DEFEAT_COUNT_TO_BOSS = 15; 
+let enemiesDefeatedInStage = 0;
+const ENEMY_DEFEAT_COUNT_TO_BOSS = 15;
 
-// 🚨 修正: 敵データ (ステージ1に統合。グループは廃止し、ドロップ判定用のCategoryは維持)
+// 敵データ
 const enemies = {
     // ステージ1の雑魚敵リスト
-    1: [ 
+    1: [
         // Category A (N:95%, R:5%)
-        { id: 1, name: 'ゴブリン', hp: 10, attack: 10, defense: 0, category: 'A', attackCount: 1, isBoss: false, image: 'ゴブリン' }, 
-        { id: 2, name: 'オーク', hp: 20, attack: 15, defense: 0, category: 'A', attackCount: 1, isBoss: false, image: 'オーク' },
-        { id: 3, name: 'スケルトン', hp: 30, attack: 20, defense: 0, category: 'A', attackCount: 1, isBoss: false, image: 'スケルトン' },
-        { id: 4, name: 'まほうつかい', hp: 50, attack: 20, defense: 5, category: 'A', attackCount: 1, isBoss: false, image: 'まほうつかい' },
-        { id: 5, name: 'ゴースト', hp: 10, attack: 25, defense: 15, category: 'A', attackCount: 1, isBoss: false, image: 'ゴースト' },
+        { id: 1, name: 'ゴブリン', hp: 10, attack: 10, defense: 0, category: 'A', attackCount: 1, isBoss: false, image: 'SQ2-e001.png' },
+        { id: 2, name: 'オーク', hp: 20, attack: 15, defense: 0, category: 'A', attackCount: 1, isBoss: false, image: 'SQ2-e002.png' },
+        { id: 3, name: 'スケルトン', hp: 30, attack: 20, defense: 0, category: 'A', attackCount: 1, isBoss: false, image: 'SQ2-e003.png' },
+        { id: 4, name: 'まほうつかい', hp: 50, attack: 20, defense: 5, category: 'A', attackCount: 1, isBoss: false, image: 'SQ2-e004.png' },
+        { id: 5, name: 'ゴースト', hp: 10, attack: 25, defense: 15, category: 'A', attackCount: 1, isBoss: false, image: 'SQ2-e005.png' },
         
         // Category B (N:50%, R:40%, SR:10%)
-        { id: 6, name: 'きょじん', hp: 100, attack: 30, defense: 10, category: 'B', attackCount: 1, isBoss: false, image: 'きょじん' },
-        { id: 7, name: 'てつのかめん', hp: 30, attack: 13, defense: 10, category: 'B', attackCount: 1, isBoss: false, image: 'てつのかめん' }
+        { id: 6, name: 'きょじん', hp: 100, attack: 30, defense: 10, category: 'B', attackCount: 1, isBoss: false, image: 'SQ2-e006.png' },
+        { id: 7, name: 'てつのかめん', hp: 30, attack: 13, defense: 10, category: 'B', attackCount: 1, isBoss: false, image: 'SQ2-e007.png' }
     ],
     // ステージ1のボス (Category C: R:90%, SR:10%)
-    '1_boss': { 
-        id: 8, name: 'ドラゴン', hp: 500, attack: 100, defense: 20, category: 'C', attackCount: 2, isBoss: true, image: 'ドラゴン' 
+    '1_boss': {
+        id: 8, name: 'ドラゴン', hp: 500, attack: 100, defense: 20, category: 'C', attackCount: 2, isBoss: true, image: 'SQ2-e008.png'
     }
 };
 let currentEnemy = null;
 
 
 // --- データほぞん・よみこみ関数 ---
-function saveData() { 
+function saveData() {
     localStorage.setItem('userData', JSON.stringify(userData));
     localStorage.setItem('gachaLog', JSON.stringify(gachaLog));
     localStorage.setItem('currentStage', currentStage);
     localStorage.setItem('enemiesDefeatedInStage', enemiesDefeatedInStage);
 }
-function loadData() { 
+function loadData() {
     const savedUserData = localStorage.getItem('userData');
     if (savedUserData) {
         userData = JSON.parse(savedUserData);
@@ -176,19 +176,19 @@ function loadData() {
         enemiesDefeatedInStage = parseInt(savedDefeated, 10);
     }
     
-    if (!gachaLog[today] || gachaLog[today].count === undefined || gachaLog[today].studyContent === undefined) { 
-        userData.hp = userData.maxHp; 
+    if (!gachaLog[today] || gachaLog[today].count === undefined || gachaLog[today].studyContent === undefined) {
+        userData.hp = userData.maxHp;
         gachaLog[today] = { count: 0, studyContent: [] };
     }
     gachaLog[today].count = Number(gachaLog[today].count) || 0;
 }
 
 // --- アイテムボーナス計算関数 ---
-function calculateWeaponArmorBonus(baseBonus, level) { 
-    return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1)); 
+function calculateWeaponArmorBonus(baseBonus, level) {
+    return Math.round(baseBonus * Math.pow(ENHANCEMENT_RATE, level - 1));
 }
-function calculatePetPercentBonus(basePercent, level) { 
-    return basePercent + (level - 1) * PET_GROWTH_RATE; 
+function calculatePetPercentBonus(basePercent, level) {
+    return basePercent + (level - 1) * PET_GROWTH_RATE;
 }
 
 function calculateTotalStats() {
@@ -239,9 +239,42 @@ function calculateTotalStats() {
     
 }
 
+// --- UI表示関連関数 ---
+
+// タブ切り替え
+window.showTab = (button, tabId) => {
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(tabId).style.display = 'block';
+    button.classList.add('active');
+};
+
+// 共通モーダル表示
+window.showModal = (title, message) => {
+    const modal = document.getElementById('custom-modal');
+    document.getElementById('modal-title').innerHTML = title;
+    document.getElementById('modal-message').innerHTML = message;
+    modal.classList.add('visible');
+};
+
+// 共通モーダル非表示
+window.hideModal = () => {
+    document.getElementById('custom-modal').classList.remove('visible');
+};
+
+// 強化モーダル非表示
+window.hideEnhanceModal = () => {
+    document.getElementById('enhance-modal').classList.remove('visible');
+};
+
+
 // --- ステータスUI更新関数 ---
 function updateCharacterStatsUI() {
-    calculateTotalStats(); 
+    calculateTotalStats();
 
     // HPバーの更新 (character-hp-bar-fill, character-hp-text)
     const hpPercent = (userData.hp / userData.maxHp) * 100;
@@ -360,8 +393,6 @@ function updateInventoryUI() {
     // 素材リストの更新
     updateMaterialInventoryUI();
 }
-// ... (以降の関数は変更なし)
-}
 
 function updateMaterialInventoryUI() {
     const materialList = document.getElementById('material-list');
@@ -400,7 +431,7 @@ function updateMaterialInventoryUI() {
 
 
 // 装備・解除機能
-window.toggleEquipItem = (itemIndex) => { 
+window.toggleEquipItem = (itemIndex) => {
     const targetItem = userData.inventory[itemIndex];
     if (!targetItem) return;
 
@@ -431,17 +462,17 @@ window.toggleEquipItem = (itemIndex) => {
             if (firstEquippedIndex !== -1 && maxEquip > 0) {
                 userData.inventory[firstEquippedIndex].isEquipped = false;
             } else if (maxEquip === 0) {
-                 showModal('装備エラー', `${itemData.name} (${type === 'weapon' ? '武器' : type === 'pet' ? 'ペット' : '防具'})は装備できません。`);
-                 return;
+                showModal('装備エラー', `${itemData.name} (${type === 'weapon' ? '武器' : type === 'pet' ? 'ペット' : '防具'})は装備できません。`);
+                return;
             }
         }
         
         // 新しいアイテムを装備
         targetItem.isEquipped = true;
     }
-    updateUI(); 
+    updateUI();
 };
-};
+
 
 // 強化モーダル表示（強化アイテムの選択機能付き）
 window.showEnhanceModal = (itemIndex) => {
@@ -528,7 +559,10 @@ window.enhanceItem = (itemIndex, materialId) => {
     
     window.hideEnhanceModal();
     updateUI();
-    // --- ガチャロジック関連関数 ---
+};
+
+
+// --- ガチャロジック関連関数 ---
 
 /**
  * 確率テーブルに基づき、レアリティを抽選する
@@ -573,232 +607,8 @@ function getRandomItem(type) {
     const randomIndex = Math.floor(Math.random() * availableItems.length);
     return availableItems[randomIndex];
 }
-};
 
-window.hideEnhanceModal = () => {
-    document.getElementById('enhance-modal').classList.remove('visible');
-};
-
-
-function updateEnemyUI() { /* ... */ }
-window.attackEnemy = () => { /* ... */ };
-function updateCalendarLogUI() { /* ... */ }
-
-
-/** 画面全体に関わるUI更新関数 */
-function updateUI() {
-    // 🚨 修正: 総合ステータスUIを更新 (HP, 攻撃力, 防御力)
-    updateCharacterStatsUI();
-    
-    // 1. ガチャ回数更新 
-    const gachaCount = gachaLog[today] ? gachaLog[today].count : 0;
-    document.getElementById('gacha-count').textContent = gachaCount;
-
-    // 2. ガチャボタンの有効/無効化
-    const isDisabled = gachaCount <= 0;
-    const weaponButton = document.getElementById('gacha-roll-weapon');
-    const petButton = document.getElementById('gacha-roll-pet');
-
-    if (weaponButton) weaponButton.disabled = isDisabled;
-    if (petButton) petButton.disabled = isDisabled;
-
-    // 3. スタンプボタンの動作保証
-    document.querySelectorAll('.study-stamp-button').forEach(button => {
-        // グレーアウト防止と緑色の維持
-        button.classList.remove('bg-gray-400');
-        button.classList.add('bg-green-500'); 
-        
-        // 🚨 修正: 意図しない無効化を防ぐため、ここで常に有効化を保証
-        button.disabled = false;
-    });
-
-    // 4. インベントリUIの更新
-    updateInventoryUI(); 
-
-    // 5. データ保存
-    saveData();
-}
-
-
-// --- イベントハンドラーとメインロジック ---
-
-document.addEventListener('DOMContentLoaded', () => {
-    loadData();
-
-    // 2. スタンプ機能のイベントリスナー
-    document.getElementById('study-stamps').addEventListener('click', (event) => {
-        const stampButton = event.target.closest('.study-stamp-button');
-
-        if (stampButton && !stampButton.disabled) {
-            const content = stampButton.getAttribute('data-content');
-            
-            // 🚨 修正: 処理開始時にボタンを無効化し、連続タップを防ぐ
-            stampButton.disabled = true;
-            
-            gachaLog[today].count += 1; 
-            
-            if (!gachaLog[today].studyContent.includes(content)) {
-                gachaLog[today].studyContent.push(content); 
-            }
-            
-            showModal('スタンプゲット！', `今日もがんばったね！<br>ガチャ回数が **1回** 増えたよ！`);
-            
-            updateUI(); 
-
-            setTimeout(() => {
-                stampButton.disabled = false;
-            }, 500);
-        }
-    });
-
-    // 3. ガチャ機能のイベントリスナー (変更なし)
-    document.getElementById('gacha-controls').addEventListener('click', (event) => { /* ... */ });
-
-    updateUI(); 
-    
-    // 画面ロード時に最初のタブ（ガチャ）を強制的に表示
-    window.showTab(document.querySelector('.tab-button.active'), 'gacha');
-});
-
-
-// ------------------ グローバル関数 (タブ切り替え、モーダル等) ------------------
-
-window.showTab = (clickedButton, tabId) => {
-    // 🚨 修正: 全てのタブボタンから 'active' クラスを削除
-    document.querySelectorAll('.tabs .tab-button').forEach(button => {
-        button.classList.remove('active');
-    });
-
-    // 🚨 修正: クリックされたボタンに 'active' クラスを追加
-    if (clickedButton) {
-        clickedButton.classList.add('active');
-    }
-
-    // 🚨 修正: 全てのタブコンテンツを非表示にする
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.style.display = 'none'; 
-    });
-    
-    // 🚨 修正: 選択されたタブコンテンツを表示する
-    const selectedContent = document.getElementById(tabId);
-    if (selectedContent) {
-        selectedContent.style.display = 'block'; 
-    }
-
-    // 特定のタブに切り替わったときの処理
-    if (tabId === 'inventory') {
-        updateInventoryUI();
-        updateCharacterStatsUI(); 
-    }
-    
-    if (tabId === 'calendar') {
-        updateCalendarLogUI();
-    }
-
-    if (tabId === 'enemy') {
-        updateEnemyUI();
-    }
-};
-
-window.showModal = (title = 'お知らせ', message = '') => { 
-    const modal = document.getElementById('custom-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalMessage = document.getElementById('modal-message');
-    
-    if (modalTitle) modalTitle.innerHTML = title;
-    if (modalMessage) modalMessage.innerHTML = message;
-    if (modal) modal.classList.add('visible');
-};
-
-window.hideModal = () => { 
-    const modal = document.getElementById('custom-modal');
-    if (modal) modal.classList.remove('visible');
-};
-
-function updateCalendarLogUI() { 
-    const logList = document.getElementById('study-log-list');
-    if (!logList) return;
-    logList.innerHTML = '';
-    
-    const sortedDates = Object.keys(gachaLog).sort().reverse();
-    
-    sortedDates.forEach(date => {
-        const log = gachaLog[date];
-        if (log.studyContent && log.studyContent.length > 0) {
-            const li = document.createElement('li');
-            const contents = log.studyContent.join('と');
-            li.innerHTML = `**${date}**: ${contents} (ガチャ ${log.count}回)`;
-            logList.appendChild(li);
-        }
-    });
-
-    if (logList.children.length === 0) {
-        logList.innerHTML = `<li class="text-gray-500">まだ勉強の記録がありません。</li>`;
-    }
-    /**
- * ガチャを引く処理を実行する
- * @param {string} type - 'weapon' または 'pet'
- */
-window.rollGacha = (type) => {
-    if ((gachaLog[today]?.count || 0) <= 0) {
-        showModal('エラー', 'ガチャ回数が足りません。勉強スタンプを押して回数を増やしましょう！');
-        return;
-    }
-    
-    const resultItemData = getRandomItem(type);
-    
-    if (!resultItemData) {
-        showModal('エラー', 'アイテムが見つかりませんでした。');
-        return;
-    }
-    
-    // ガチャ回数を1回消費
-    gachaLog[today].count -= 1;
-    
-    // インベントリにアイテムを追加
-    const newItem = {
-        id: resultItemData.id,
-        level: 1, // 初期レベルは1
-        isEquipped: false
-    };
-    userData.inventory.push(newItem);
-
-    // レアリティカラー設定 (モーダル用)
-    let rarityColorClass = '';
-    if (resultItemData.rarity === 'R') rarityColorClass = 'text-blue-500';
-    else if (resultItemData.rarity === 'SR') rarityColorClass = 'text-purple-500';
-    else if (resultItemData.rarity === 'UR') rarityColorClass = 'text-yellow-500';
-    else if (resultItemData.rarity === 'LE') rarityColorClass = 'text-red-500';
-    
-    // 結果モーダルを表示
-    showModal(
-        'ガチャ結果！', 
-        `<div class="text-center">
-            <img src="${resultItemData.image}" alt="${resultItemData.name}" class="w-20 h-20 mx-auto mb-3 rounded-full border-2 border-dashed ${rarityColorClass.replace('text', 'border')}">
-            <p class="font-bold text-lg">🎉 ${resultItemData.rarity} ゲット！ 🎉</p>
-            <p class="text-xl ${rarityColorClass}">${resultItemData.name}</p>
-        </div>`
-    );
-
-    updateUI(); 
-};
-      // 3. ガチャ機能のイベントリスナーを修正
-    document.getElementById('gacha-controls').addEventListener('click', (event) => {
-        const weaponButton = event.target.closest('#gacha-roll-weapon');
-        const petButton = event.target.closest('#gacha-roll-pet');
-
-        if (weaponButton) {
-            window.rollGacha('weapon'); // 武器・防具ガチャを実行
-        } else if (petButton) {
-            window.rollGacha('pet'); // ペットガチャを実行
-        }
-    });
-
-    updateUI(); 
-    
-    // 画面ロード時に最初のタブ（ガチャ）を強制的に表示
-    window.showTab(document.querySelector('.tab-button.active'), 'gacha');
-    /**
+/**
  * ガチャを引く処理を実行する
  * @param {string} type - 'weapon' または 'pet'
  */
@@ -818,7 +628,7 @@ window.rollGacha = (type) => {
     // ガチャ回数を1回消費
     gachaLog[today].count -= 1;
 
-    // 🚨 修正ロジック: インベントリをチェックし、同一IDのアイテムがあればレベルアップ
+    // インベントリをチェックし、同一IDのアイテムがあればレベルアップ
     let isDuplicate = false;
     let enhancedItem = null;
 
@@ -869,6 +679,104 @@ window.rollGacha = (type) => {
     // 結果モーダルを表示
     showModal('ガチャ結果！', modalMessage);
 
-    updateUI(); 
+    updateUI();
 };
+
+// --- 戦闘ダミー関数 ---
+// 🚨 (必須ではないが、エラー防止のため定義しておきます)
+function updateEnemyUI() { 
+    const enemyArea = document.getElementById('enemy-area');
+    if (enemyArea) {
+        enemyArea.innerHTML = `<p class="text-gray-500">戦闘ロジックは未実装です。</p>`;
+    }
 }
+window.attackEnemy = () => { showModal('未実装', '戦闘ロジックはまだ実装されていません。'); };
+window.findEnemy = () => { showModal('未実装', '戦闘ロジックはまだ実装されていません。'); };
+function updateCalendarLogUI() { /* 未実装 */ }
+
+
+/** 画面全体に関わるUI更新関数 */
+function updateUI() {
+    // 総合ステータスUIを更新 (HP, 攻撃力, 防御力)
+    updateCharacterStatsUI();
+    
+    // 1. ガチャ回数更新 
+    const gachaCount = gachaLog[today] ? gachaLog[today].count : 0;
+    document.getElementById('gacha-count').textContent = gachaCount;
+
+    // 2. ガチャボタンの有効/無効化
+    const isDisabled = gachaCount <= 0;
+    const weaponButton = document.getElementById('gacha-roll-weapon');
+    const petButton = document.getElementById('gacha-roll-pet');
+
+    if (weaponButton) weaponButton.disabled = isDisabled;
+    if (petButton) petButton.disabled = isDisabled;
+
+    // 3. スタンプボタンの動作保証
+    document.querySelectorAll('.study-stamp-button').forEach(button => {
+        button.classList.remove('bg-gray-400');
+        button.classList.add('bg-green-500'); 
+        button.disabled = false;
+    });
+
+    // 4. インベントリUIの更新
+    updateInventoryUI(); 
+
+    // 5. データ保存
+    saveData();
+}
+
+
+// --- イベントハンドラーとメインロジック ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadData();
+
+    // 1. タブのイベントリスナー (index.htmlのonclick属性で対応済み)
+    
+    // 2. スタンプ機能のイベントリスナー
+    document.getElementById('study-stamps').addEventListener('click', (event) => {
+        const stampButton = event.target.closest('.study-stamp-button');
+
+        if (stampButton && !stampButton.disabled) {
+            const content = stampButton.getAttribute('data-content');
+            
+            // 処理開始時にボタンを無効化し、連続タップを防ぐ
+            stampButton.disabled = true;
+            
+            gachaLog[today].count += 1; 
+            
+            if (!gachaLog[today].studyContent.includes(content)) {
+                gachaLog[today].studyContent.push(content); 
+            }
+            
+            showModal('スタンプゲット！', `今日もがんばったね！<br>ガチャ回数が **1回** 増えたよ！`);
+            
+            updateUI(); 
+
+            setTimeout(() => {
+                stampButton.disabled = false;
+            }, 500);
+        }
+    });
+
+    // 3. ガチャ機能のイベントリスナー (修正: rollGacha関数を呼び出す)
+    document.getElementById('gacha-controls').addEventListener('click', (event) => {
+        const weaponButton = event.target.closest('#gacha-roll-weapon');
+        const petButton = event.target.closest('#gacha-roll-pet');
+
+        if (weaponButton) {
+            window.rollGacha('weapon'); // 武器・防具ガチャを実行
+        } else if (petButton) {
+            window.rollGacha('pet'); // ペットガチャを実行
+        }
+    });
+
+    updateUI(); 
+    
+    // 画面ロード時に最初のタブ（ガチャ）を強制的に表示
+    const initialTabButton = document.querySelector('.tab-button.active');
+    if (initialTabButton) {
+         window.showTab(initialTabButton, 'gacha');
+    }
+});
