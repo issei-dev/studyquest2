@@ -272,17 +272,30 @@ function updateInventoryUI() {
     
     inventoryList.innerHTML = '';
     
-    const equippedWeaponContainer = document.getElementById('equipped-weapon-container');
-    const equippedPetContainer = document.getElementById('equipped-pet-container');
-    const equippedArmorContainer = document.getElementById('equipped-armor-container'); // 鎧表示を追加
+    // 装備スロットの初期化
+    const weaponContainers = [
+        document.getElementById('equipped-weapon-container-1'), 
+        document.getElementById('equipped-weapon-container-2')
+    ];
+    const armorContainer = document.getElementById('equipped-armor-container-1');
+    const petContainers = [
+        document.getElementById('equipped-pet-container-1'),
+        document.getElementById('equipped-pet-container-2'),
+        document.getElementById('equipped-pet-container-3')
+    ];
 
-    if (equippedWeaponContainer) equippedWeaponContainer.innerHTML = '<div class="text-gray-500 text-sm">なし</div>';
-    if (equippedPetContainer) equippedPetContainer.innerHTML = '<div class="text-gray-500 text-sm">なし</div>';
-    if (equippedArmorContainer) equippedArmorContainer.innerHTML = '<div class="text-gray-500 text-sm">なし</div>'; // 鎧表示を初期化
+    // 初期化表示
+    if (armorContainer) armorContainer.innerHTML = '<div class="text-gray-500 text-sm">なし</div>';
+    weaponContainers.forEach((c, i) => { if (c) c.innerHTML = `<div class="text-gray-500 text-sm">スロット ${i+1}: なし</div>`; });
+    petContainers.forEach((c, i) => { if (c) c.innerHTML = `<div class="text-gray-500 text-sm">スロット ${i+1}: なし</div>`; });
+
+
+    let weaponSlotIndex = 0;
+    let petSlotIndex = 0;
 
     userData.inventory.forEach((invItem, index) => {
         const itemData = items.find(i => i.id === invItem.id);
-        if (!itemData || itemData.type === 'material') return; // 素材はリストに表示しない（ここでは）
+        if (!itemData || itemData.type === 'material') return; // 素材はリストに表示しない
 
         const level = invItem.level || 1;
         const enhancementLevel = level - 1;
@@ -320,25 +333,34 @@ function updateInventoryUI() {
         li.innerHTML = itemHtml + buttonHtml;
         inventoryList.appendChild(li);
 
-        // 装備/ペットの表示を更新
+        // 装備/ペットの表示を更新 (複数スロット対応)
         if (invItem.isEquipped) {
             const equippedHtml = `<div class="flex items-center">
                 <img src="${itemData.image}" alt="${itemData.name}" class="w-12 h-12 mr-3 rounded-full border-2 border-yellow-400">
                 <span class="font-bold ${rarityColor}">${itemData.name} +${enhancementLevel}</span>
             </div>`;
             
-            if (itemData.type === 'pet' && equippedPetContainer) {
-                equippedPetContainer.innerHTML = equippedHtml;
-            } else if (itemData.type === 'weapon' && equippedWeaponContainer) {
-                 equippedWeaponContainer.innerHTML = equippedHtml;
-            } else if (itemData.type === 'armor' && equippedArmorContainer) {
-                 equippedArmorContainer.innerHTML = equippedHtml;
+            if (itemData.type === 'pet' && petSlotIndex < petContainers.length) {
+                if (petContainers[petSlotIndex]) {
+                    petContainers[petSlotIndex].innerHTML = equippedHtml;
+                    petSlotIndex++;
+                }
+            } else if (itemData.type === 'weapon' && weaponSlotIndex < weaponContainers.length) {
+                 if (weaponContainers[weaponSlotIndex]) {
+                     weaponContainers[weaponSlotIndex].innerHTML = equippedHtml;
+                     weaponSlotIndex++;
+                 }
+            } else if (itemData.type === 'armor' && armorContainer) {
+                 // 防具は一つだけなので、index 0を使用
+                 armorContainer.innerHTML = equippedHtml;
             }
         }
     });
     
     // 素材リストの更新
     updateMaterialInventoryUI();
+}
+// ... (以降の関数は変更なし)
 }
 
 function updateMaterialInventoryUI() {
