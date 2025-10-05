@@ -487,6 +487,51 @@ window.enhanceItem = (itemIndex, materialId) => {
     
     window.hideEnhanceModal();
     updateUI();
+    // --- ガチャロジック関連関数 ---
+
+/**
+ * 確率テーブルに基づき、レアリティを抽選する
+ * @param {string} type - 'weapon' または 'pet'
+ * @returns {string} 抽選されたレアリティ ('N', 'R', 'SR', 'UR', 'LE')
+ */
+function drawRarity(type) {
+    const rarityGroups = GACHA_RARITY_GROUPS[type];
+    if (!rarityGroups) return 'N'; // デフォルト
+
+    const totalWeight = Object.values(rarityGroups).reduce((sum, weight) => sum + weight, 0);
+    let randomNum = Math.random() * totalWeight;
+
+    for (const rarity in rarityGroups) {
+        randomNum -= rarityGroups[rarity];
+        if (randomNum <= 0) {
+            return rarity;
+        }
+    }
+    return 'N'; // 安全策
+}
+
+/**
+ * 抽選されたレアリティとタイプに基づき、ランダムなアイテムを1つ選ぶ
+ * @param {string} type - 'weapon' または 'pet'
+ * @returns {object|null} 抽選されたアイテムデータ
+ */
+function getRandomItem(type) {
+    const drawnRarity = drawRarity(type);
+
+    // 抽選されたレアリティとタイプに一致するアイテムをフィルタリング
+    const availableItems = items.filter(item => 
+        item.type === type && item.rarity === drawnRarity
+    );
+
+    if (availableItems.length === 0) {
+        // もし該当アイテムがなければ、同じタイプで一つ上のレアリティを再検索 (緊急措置)
+        return items.find(item => item.type === type) || null;
+    }
+
+    // フィルタリングされたアイテムからランダムに1つ選択
+    const randomIndex = Math.floor(Math.random() * availableItems.length);
+    return availableItems[randomIndex];
+}
 };
 
 window.hideEnhanceModal = () => {
