@@ -110,25 +110,36 @@
         <div id="inventory" class="tab-content bg-white p-4 rounded-lg shadow-md" style="display:none;">
             <h2 class="text-xl font-semibold mb-3">もちもの</h2>
 
-            <div class="mb-6 border p-3 rounded-lg bg-gray-50">
+           <div class="mb-6 border p-3 rounded-lg bg-gray-50">
                 <h3 class="text-lg font-bold mb-2">現在の装備</h3>
                 <div class="space-y-2">
+                    <div class="p-2 border-b">
+                        <span class="text-gray-600 block mb-1">武器 (MAX: 2):</span>
+                        <div id="equipped-weapon-container-1" class="mb-1">
+                            <div class="text-gray-500 text-sm">スロット 1: なし</div>
+                        </div>
+                        <div id="equipped-weapon-container-2">
+                            <div class="text-gray-500 text-sm">スロット 2: なし</div>
+                        </div>
+                    </div>
+                    
                     <div class="flex items-center justify-between p-2 border-b">
-                        <span class="text-gray-600">武器:</span>
-                        <div id="equipped-weapon-container" class="text-right">
+                        <span class="text-gray-600">防具 (MAX: 1):</span>
+                        <div id="equipped-armor-container-1" class="text-right">
                             <div class="text-gray-500 text-sm">なし</div>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between p-2 border-b">
-                        <span class="text-gray-600">防具:</span>
-                        <div id="equipped-armor-container" class="text-right">
-                            <div class="text-gray-500 text-sm">なし</div>
+                    
+                    <div class="p-2">
+                        <span class="text-gray-600 block mb-1">ペット (MAX: 3):</span>
+                        <div id="equipped-pet-container-1" class="mb-1">
+                            <div class="text-gray-500 text-sm">スロット 1: なし</div>
                         </div>
-                    </div>
-                    <div class="flex items-center justify-between p-2">
-                        <span class="text-gray-600">ペット:</span>
-                        <div id="equipped-pet-container" class="text-right">
-                            <div class="text-gray-500 text-sm">なし</div>
+                        <div id="equipped-pet-container-2" class="mb-1">
+                            <div class="text-gray-500 text-sm">スロット 2: なし</div>
+                        </div>
+                        <div id="equipped-pet-container-3">
+                            <div class="text-gray-500 text-sm">スロット 3: なし</div>
                         </div>
                     </div>
                 </div>
