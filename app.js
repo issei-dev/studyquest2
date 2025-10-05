@@ -47,10 +47,10 @@ let gachaLog = {};
 // --- アイテムデータ ---
 const items = [
     // 武器 (Weapon)
-    { id: 'W001', name: '木の剣', type: 'weapon', attackBonus: 2, defenseBonus: 0, hpBonus: 0, rarity: 'N', image: 'https://placehold.co/80x80/a0522d/ffffff?text=木剣' },
-    { id: 'W002', name: '木の斧', type: 'weapon', attackBonus: 1, defenseBonus: 1, hpBonus: 0, rarity: 'N', image: 'https://placehold.co/80x80/a0522d/ffffff?text=木斧' },
-    { id: 'W003', name: '木の杖', type: 'weapon', attackBonus: 1, defenseBonus: 0, hpBonus: 1, rarity: 'N', image: 'https://placehold.co/80x80/a0522d/ffffff?text=木杖' },
-    { id: 'W004', name: '木の盾', type: 'weapon', attackBonus: 0, defenseBonus: 2, hpBonus: 0, rarity: 'N', image: 'https://placehold.co/80x80/a0522d/ffffff?text=木盾' },
+    { id: 'W001', name: '木の剣', type: 'weapon', attackBonus: 2, defenseBonus: 0, hpBonus: 0, rarity: 'N', image: 'SQ2-w001.png' },
+    { id: 'W002', name: '木の斧', type: 'weapon', attackBonus: 1, defenseBonus: 1, hpBonus: 0, rarity: 'N', image: 'SQ2-w002.png' },
+    { id: 'W003', name: '木の杖', type: 'weapon', attackBonus: 1, defenseBonus: 0, hpBonus: 1, rarity: 'N', image: 'SQ2-w003.png' },
+    { id: 'W004', name: '木の盾', type: 'weapon', attackBonus: 0, defenseBonus: 2, hpBonus: 0, rarity: 'N', image: 'SQ2-w004.png' },
     { id: 'W005', name: '石の剣', type: 'weapon', attackBonus: 1, defenseBonus: 0, hpBonus: 1, rarity: 'N', image: 'https://placehold.co/80x80/7e7e7e/ffffff?text=石剣' },
     { id: 'W006', name: '石の斧', type: 'weapon', attackBonus: 0, defenseBonus: 1, hpBonus: 1, rarity: 'N', image: 'https://placehold.co/80x80/7e7e7e/ffffff?text=石斧' },
     { id: 'W007', name: '石の槍', type: 'weapon', attackBonus: 0, defenseBonus: 0, hpBonus: 2, rarity: 'N', image: 'https://placehold.co/80x80/7e7e7e/ffffff?text=石槍' },
