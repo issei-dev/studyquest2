@@ -385,21 +385,40 @@ window.toggleEquipItem = (itemIndex) => {
     const itemData = items.find(i => i.id === targetItem.id);
     if (!itemData || itemData.type === 'material') return;
 
+    const type = itemData.type;
+    const maxEquip = type === 'weapon' ? 2 : type === 'pet' ? 3 : 1; // 武器:2, ペット:3, 防具:1
+
     if (targetItem.isEquipped) {
         // 解除
         targetItem.isEquipped = false;
     } else {
-        // 装備 (同種の他のアイテムを解除するロジック)
-        const type = itemData.type;
-        userData.inventory.forEach(invItem => {
+        // 装備
+        // 現在装備中の同種アイテム数をカウント
+        const equippedCount = userData.inventory.filter(invItem => {
             const currentItemData = items.find(i => i.id === invItem.id);
-            if (currentItemData && currentItemData.type === type) {
-                invItem.isEquipped = false;
+            return currentItemData && currentItemData.type === type && invItem.isEquipped;
+        }).length;
+
+        if (equippedCount >= maxEquip) {
+            // 上限に達している場合、最も古い（または最初の）装備品を自動で解除する
+            const firstEquippedIndex = userData.inventory.findIndex(invItem => {
+                const currentItemData = items.find(i => i.id === invItem.id);
+                return currentItemData && currentItemData.type === type && invItem.isEquipped;
+            });
+
+            if (firstEquippedIndex !== -1 && maxEquip > 0) {
+                userData.inventory[firstEquippedIndex].isEquipped = false;
+            } else if (maxEquip === 0) {
+                 showModal('装備エラー', `${itemData.name} (${type === 'weapon' ? '武器' : type === 'pet' ? 'ペット' : '防具'})は装備できません。`);
+                 return;
             }
-        });
+        }
+        
+        // 新しいアイテムを装備
         targetItem.isEquipped = true;
     }
     updateUI(); 
+};
 };
 
 // 強化モーダル表示（強化アイテムの選択機能付き）
