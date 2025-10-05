@@ -3,224 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>勉強RPG</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* モーダルの基本スタイル */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal.visible {
-            display: flex;
-        }
-        .modal-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        /* HPバーのスタイル */
-        .hp-bar-container {
-            width: 100%;
-            background-color: #e0e0e0;
-            border-radius: 5px;
-            overflow: hidden;
-            height: 20px;
-        }
-        .hp-bar-fill {
-            height: 100%;
-            background-color: #ef4444; /* red-500 */
-            transition: width 0.3s;
-        }
-        /* タブのアクティブ表示 */
-        .tab-button.active {
-            background-color: #3b82f6; /* blue-500 */
-            color: white;
-        }
-    </style>
+    <title>Quest Companion RPG</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body>
 
-    <div class="container mx-auto p-4 max-w-xl">
-        <header class="text-center mb-4">
-            <h1 class="text-3xl font-bold text-gray-800">勉強RPG</h1>
-        </header>
-
-        <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-            <h2 class="text-xl font-semibold mb-3">勇者ステータス</h2>
-            
-            <div class="mb-3">
-                <div class="flex justify-between text-sm font-medium mb-1">
-                    <span>HP:</span>
-                    <span id="character-hp-text">100 / 100</span>
-                </div>
-                <div class="hp-bar-container">
-                    <div id="character-hp-bar-fill" class="hp-bar-fill" style="width: 100%;"></div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 text-center mt-4">
-                <div class="bg-gray-100 p-2 rounded">
-                    <span class="text-xs text-gray-500 block">攻撃力 (ATK)</span>
-                    <span id="character-attack" class="text-lg font-bold">10</span>
-                </div>
-                <div class="bg-gray-100 p-2 rounded">
-                    <span class="text-xs text-gray-500 block">防御力 (DEF)</span>
-                    <span id="character-defense" class="text-lg font-bold">5</span>
-                </div>
-            </div>
+    <header class="stats-panel">
+        <p>Lv.<span id="player-level">1</span></p>
+        <p>HP: <span id="player-hp">100 / 100</span></p>
+        <p>ATK: <span id="player-attack">10</span>, DEF: <span id="player-defense">5</span></p>
+        <p>💰 <span id="player-gold">0</span></p>
+        <p>🎫 <span id="gacha-tickets">0</span></p>
+        <div class="exp-bar">
+            <div id="exp-bar-fill"></div>
         </div>
+        <p>EXP: <span id="player-exp">0 / 100</span></p>
+    </header>
 
-        <div class="tabs flex justify-around bg-gray-200 p-1 rounded-lg mb-4">
-            <button class="tab-button active w-full p-2 rounded" onclick="showTab(this, 'gacha')">ガチャ</button>
-            <button class="tab-button w-full p-2 rounded" onclick="showTab(this, 'inventory')">もちもの</button>
-            <button class="tab-button w-full p-2 rounded" onclick="showTab(this, 'enemy')">たたかう</button>
-            <button class="tab-button w-full p-2 rounded" onclick="showTab(this, 'calendar')">記録</button>
-        </div>
+    <div class="main-container">
+        <nav class="tabs">
+            <button class="tab-button active" onclick="showTab('battle')">⚔️ 探索</button>
+            <button class="tab-button" onclick="showTab('inventory')">📦 持ち物</button>
+            <button class="tab-button" onclick="showTab('equipment')">🛡️ 装備</button>
+            <button class="tab-button" onclick="showTab('pet')">🐾 ペット</button>
+            <button class="tab-button" onclick="showTab('gacha')">🎟️ ガチャ</button>
+            <button class="tab-button" onclick="showTab('study')">📖 勉強スタンプ</button>
+        </nav>
 
-        <div id="gacha" class="tab-content bg-white p-4 rounded-lg shadow-md">
-            <h2 class="text-xl font-semibold mb-3">ガチャを引く</h2>
-            <p class="mb-4">スタンプを押して入手したガチャ回数を使って、アイテムやペットを入手しよう！</p>
-            
-            <div class="mb-4 p-3 bg-blue-100 border-l-4 border-blue-500 text-blue-800">
-                現在のガチャ回数: <span id="gacha-count" class="font-bold text-lg">0</span> 回
-            </div>
-
-            <div id="gacha-controls" class="space-y-3">
-                <button id="gacha-roll-weapon" class="w-full p-3 rounded-lg text-white font-bold bg-purple-500 disabled:bg-gray-400">
-                    武器・防具ガチャ (1回消費)
-                </button>
-                <button id="gacha-roll-pet" class="w-full p-3 rounded-lg text-white font-bold bg-pink-500 disabled:bg-gray-400">
-                    ペットガチャ (1回消費)
-                </button>
-            </div>
-        </div>
-
-        <div id="inventory" class="tab-content bg-white p-4 rounded-lg shadow-md" style="display:none;">
-            <h2 class="text-xl font-semibold mb-3">もちもの</h2>
-
-           <div class="mb-6 border p-3 rounded-lg bg-gray-50">
-                <h3 class="text-lg font-bold mb-2">現在の装備</h3>
-                <div class="space-y-2">
-                    <div class="p-2 border-b">
-                        <span class="text-gray-600 block mb-1">武器 (MAX: 2):</span>
-                        <div id="equipped-weapon-container-1" class="mb-1">
-                            <div class="text-gray-500 text-sm">スロット 1: なし</div>
-                        </div>
-                        <div id="equipped-weapon-container-2">
-                            <div class="text-gray-500 text-sm">スロット 2: なし</div>
-                        </div>
+        <div id="battle" class="tab-content active">
+            <h2>⚔️ 探索/戦闘</h2>
+            <p id="stage-info">ステージ 1 | 撃破数: 0 / 15</p>
+            <div class="battle-area">
+                <div id="battle-enemy-container" class="enemy-zone">
                     </div>
-                    
-                    <div class="flex items-center justify-between p-2 border-b">
-                        <span class="text-gray-600">防具 (MAX: 1):</span>
-                        <div id="equipped-armor-container-1" class="text-right">
-                            <div class="text-gray-500 text-sm">なし</div>
-                        </div>
+                <button onclick="attackEnemy()" class="attack-button">攻撃！</button>
+                <div id="battle-log" class="log-box">
                     </div>
-                    
-                    <div class="p-2">
-                        <span class="text-gray-600 block mb-1">ペット (MAX: 3):</span>
-                        <div id="equipped-pet-container-1" class="mb-1">
-                            <div class="text-gray-500 text-sm">スロット 1: なし</div>
-                        </div>
-                        <div id="equipped-pet-container-2" class="mb-1">
-                            <div class="text-gray-500 text-sm">スロット 2: なし</div>
-                        </div>
-                        <div id="equipped-pet-container-3">
-                            <div class="text-gray-500 text-sm">スロット 3: なし</div>
-                        </div>
-                    </div>
+            </div>
+            <button onclick="resetGameData()" class="reset-button">⚠️ データリセット</button>
+        </div>
+
+        <div id="inventory" class="tab-content">
+            <h2>📦 持ち物リスト</h2>
+            <div id="inventory-list" class="item-grid">
                 </div>
-            </div>
-
-            <h3 class="text-lg font-bold mb-2 border-b pb-1">装備可能アイテム</h3>
-            <ul id="inventory-list" class="space-y-2">
-                </ul>
-            
-            <h3 class="text-lg font-bold mt-6 mb-2 border-b pb-1">強化素材</h3>
-            <ul id="material-list" class="space-y-2 bg-gray-50 p-3 rounded">
-                </ul>
         </div>
 
-        <div id="enemy" class="tab-content bg-white p-4 rounded-lg shadow-md" style="display:none;">
-            <h2 class="text-xl font-semibold mb-3">たたかう</h2>
-            <p class="mb-4">敵を倒して、武器やペットを強化する素材を手に入れよう！</p>
-            
-            <div class="mb-4 p-3 border rounded-lg bg-red-50 text-center">
-                <p class="font-bold">あなたの力</p>
-                HP: <span id="enemy-tab-hp"></span> | ATK: <span id="enemy-tab-attack"></span>
-            </div>
-
-            <div id="enemy-area" class="text-center mb-6">
-                <p class="text-gray-500">戦うボタンを押して、敵を見つけよう！</p>
-            </div>
-
-            <div class="space-y-3">
-                <button id="find-enemy" onclick="findEnemy()" class="w-full p-3 rounded-lg text-white font-bold bg-green-500">
-                    敵を見つける
-                </button>
-                <button id="attack-button" onclick="attackEnemy()" class="w-full p-3 rounded-lg text-white font-bold bg-red-600 disabled:bg-gray-400" disabled>
-                    たたかう (0 / 1 ターン)
-                </button>
+        <div id="equipment" class="tab-content">
+            <h2>🛡️ 装備中のアイテム</h2>
+            <div class="equipment-slots">
+                <div id="equipped-weapon" class="item-card empty">武器スロット</div>
+                <div id="equipped-armor" class="item-card empty">防具スロット</div>
             </div>
         </div>
 
-        <div id="calendar" class="tab-content bg-white p-4 rounded-lg shadow-md" style="display:none;">
-            <h2 class="text-xl font-semibold mb-3">今日の勉強記録</h2>
-            <p class="mb-4">勉強した内容に応じてスタンプを押そう！</p>
-            
-            <div id="study-stamps" class="grid grid-cols-3 gap-3 mb-6">
-                <button class="study-stamp-button p-4 rounded-lg text-white font-bold bg-green-500 hover:bg-green-600 transition" data-content="プログラミング">
-                    プログラミング
-                </button>
-                <button class="study-stamp-button p-4 rounded-lg text-white font-bold bg-green-500 hover:bg-green-600 transition" data-content="外国語学習">
-                    外国語学習
-                </button>
-                <button class="study-stamp-button p-4 rounded-lg text-white font-bold bg-green-500 hover:bg-green-600 transition" data-content="資格勉強">
-                    資格勉強
-                </button>
+        <div id="pet" class="tab-content">
+            <h2>🐾 ペット</h2>
+            <div class="equipment-slots">
+                <div id="equipped-pet-slot" class="item-card empty">ペットスロット</div>
             </div>
-
-            <h2 class="text-xl font-semibold mb-3">過去の記録</h2>
-            <ul id="study-log-list" class="space-y-2 text-sm">
-                </ul>
+            <h3>手持ちのペット</h3>
+            <div id="pet-list" class="item-grid">
+                </div>
         </div>
 
-    </div>
+        <div id="gacha" class="tab-content">
+            <h2>🎟️ ガチャ</h2>
+            <p>チケット残高: 🎫 <span id="gacha-tickets">0</span></p>
+            <button onclick="drawGacha()" class="gacha-button">ガチャを引く (1回)</button>
+        </div>
 
-    <div id="custom-modal" class="modal" onclick="hideModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 id="modal-title" class="text-xl font-bold mb-3">お知らせ</h3>
-            <p id="modal-message" class="mb-4"></p>
-            <button class="w-full p-2 rounded-lg text-white font-bold bg-blue-500" onclick="hideModal()">閉じる</button>
+        <div id="study" class="tab-content">
+            <h2>📖 勉強スタンプ</h2>
+            <div id="study-stamp-calendar" class="stamp-container">
+                </div>
+            <p id="stamp-message">連続ログイン中！</p>
         </div>
     </div>
-
-    <div id="enhance-modal" class="modal" onclick="hideEnhanceModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 class="text-xl font-bold mb-3">アイテム強化</h3>
-            <div class="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800">
-                <p class="font-bold">強化対象:</p>
-                <p id="enhance-modal-target-item"></p>
-            </div>
-            
-            <h4 class="font-bold mb-2">使用する強化素材</h4>
-            <div id="enhance-material-options" class="space-y-2">
-                </div>
-
-            <button class="w-full p-2 mt-4 rounded-lg text-white font-bold bg-gray-500" onclick="hideEnhanceModal()">キャンセル</button>
+    
+    <div id="enhance-popup" class="popup-overlay" style="display:none;">
+        <div class="popup-content">
+            <h3>アイテム強化</h3>
+            <p id="enhance-item-name"></p>
+            <div id="enhance-materials-list"></div>
+            <button onclick="closeEnhancePopup()">閉じる</button>
+        </div>
+    </div>
+    
+    <div id="pet-enhance-popup" class="popup-overlay" style="display:none;">
+        <div class="popup-content">
+            <h3>ペット強化</h3>
+            <p id="pet-enhance-name"></p>
+            <div id="pet-enhance-materials-list"></div>
+            <button onclick="closePetEnhancePopup()">閉じる</button>
         </div>
     </div>
 
