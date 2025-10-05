@@ -4,101 +4,115 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quest Companion RPG</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 最小限のタブ機能動作に必要なCSSのみをインラインで定義します */
+        .tab-content {
+            display: none; /* デフォルトは非表示 */
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .tab-content.active {
+            display: block; /* activeクラスが付いたものだけを表示 */
+        }
+        .tab-button.active {
+            font-weight: bold; /* activeなボタンを太字にする程度の最小限のスタイル */
+        }
+    </style>
 </head>
 <body>
 
-    <header class="stats-panel">
-        <p>Lv.<span id="player-level">1</span></p>
-        <p>HP: <span id="player-hp">100 / 100</span></p>
-        <p>ATK: <span id="player-attack">10</span>, DEF: <span id="player-defense">5</span></p>
-        <p>💰 <span id="player-gold">0</span></p>
-        <p>🎫 <span id="gacha-tickets">0</span></p>
-        <div class="exp-bar">
-            <div id="exp-bar-fill"></div>
+    <header>
+        <h3>プレイヤー ステータス</h3>
+        <p>Lv.<span id="player-level">?</span></p>
+        <p>HP: <span id="player-hp">? / ?</span></p>
+        <p>ATK: <span id="player-attack">?</span>, DEF: <span id="player-defense">?</span></p>
+        <p>💰 <span id="player-gold">?</span> | 🎫 <span id="gacha-tickets">?</span></p>
+        <div class="exp-bar" style="height: 10px; background: #ddd; width: 200px;">
+            <div id="exp-bar-fill" style="height: 100%; background: green; width: 0%;"></div>
         </div>
-        <p>EXP: <span id="player-exp">0 / 100</span></p>
+        <p>EXP: <span id="player-exp">? / ?</span></p>
+        <p id="stage-info">ステージ情報:</p>
     </header>
 
-    <div class="main-container">
-        <nav class="tabs">
-            <button class="tab-button active" onclick="showTab('battle')">⚔️ 探索</button>
-            <button class="tab-button" onclick="showTab('inventory')">📦 持ち物</button>
-            <button class="tab-button" onclick="showTab('equipment')">🛡️ 装備</button>
-            <button class="tab-button" onclick="showTab('pet')">🐾 ペット</button>
-            <button class="tab-button" onclick="showTab('gacha')">🎟️ ガチャ</button>
-            <button class="tab-button" onclick="showTab('study')">📖 勉強スタンプ</button>
-        </nav>
+    <hr>
 
+    <nav class="tabs">
+        <button class="tab-button active" onclick="showTab('battle')">⚔️ 探索</button>
+        <button class="tab-button" onclick="showTab('inventory')">📦 持ち物</button>
+        <button class="tab-button" onclick="showTab('equipment')">🛡️ 装備</button>
+        <button class="tab-button" onclick="showTab('pet')">🐾 ペット</button>
+        <button class="tab-button" onclick="showTab('gacha')">🎟️ ガチャ</button>
+        <button class="tab-button" onclick="showTab('study')">📖 勉強スタンプ</button>
+    </nav>
+
+    <main class="main-container">
         <div id="battle" class="tab-content active">
             <h2>⚔️ 探索/戦闘</h2>
-            <p id="stage-info">ステージ 1 | 撃破数: 0 / 15</p>
-            <div class="battle-area">
-                <div id="battle-enemy-container" class="enemy-zone">
-                    </div>
-                <button onclick="attackEnemy()" class="attack-button">攻撃！</button>
-                <div id="battle-log" class="log-box">
-                    </div>
-            </div>
-            <button onclick="resetGameData()" class="reset-button">⚠️ データリセット</button>
+            <div id="battle-enemy-container">
+                </div>
+            <button onclick="attackEnemy()">攻撃！</button>
+            <div id="battle-log" style="height: 100px; overflow-y: scroll; border: 1px solid black; background: #333; color: white;">
+                </div>
+            <button onclick="resetGameData()" style="margin-top: 10px;">⚠️ データリセット</button>
         </div>
 
         <div id="inventory" class="tab-content">
             <h2>📦 持ち物リスト</h2>
-            <div id="inventory-list" class="item-grid">
+            <div id="inventory-list" style="display: flex; flex-wrap: wrap; gap: 10px;">
                 </div>
         </div>
 
         <div id="equipment" class="tab-content">
             <h2>🛡️ 装備中のアイテム</h2>
-            <div class="equipment-slots">
-                <div id="equipped-weapon" class="item-card empty">武器スロット</div>
-                <div id="equipped-armor" class="item-card empty">防具スロット</div>
+            <div style="display: flex; gap: 10px;">
+                <div id="equipped-weapon" style="border: 1px dashed gray; padding: 10px; width: 100px;">武器スロット</div>
+                <div id="equipped-armor" style="border: 1px dashed gray; padding: 10px; width: 100px;">防具スロット</div>
             </div>
         </div>
 
         <div id="pet" class="tab-content">
             <h2>🐾 ペット</h2>
-            <div class="equipment-slots">
-                <div id="equipped-pet-slot" class="item-card empty">ペットスロット</div>
+            <div style="display: flex; gap: 10px;">
+                <div id="equipped-pet-slot" style="border: 1px dashed gray; padding: 10px; width: 100px;">ペットスロット</div>
             </div>
             <h3>手持ちのペット</h3>
-            <div id="pet-list" class="item-grid">
+            <div id="pet-list" style="display: flex; flex-wrap: wrap; gap: 10px;">
                 </div>
         </div>
 
         <div id="gacha" class="tab-content">
             <h2>🎟️ ガチャ</h2>
-            <p>チケット残高: 🎫 <span id="gacha-tickets">0</span></p>
-            <button onclick="drawGacha()" class="gacha-button">ガチャを引く (1回)</button>
+            <p>チケット残高: 🎫 <span id="gacha-tickets">?</span></p>
+            <button onclick="drawGacha()">ガチャを引く (1回)</button>
         </div>
 
         <div id="study" class="tab-content">
             <h2>📖 勉強スタンプ</h2>
-            <div id="study-stamp-calendar" class="stamp-container">
+            <div id="study-stamp-calendar" style="display: flex; gap: 5px;">
                 </div>
-            <p id="stamp-message">連続ログイン中！</p>
+            <p id="stamp-message">連続ログイン情報</p>
         </div>
-    </div>
-    
-    <div id="enhance-popup" class="popup-overlay" style="display:none;">
-        <div class="popup-content">
-            <h3>アイテム強化</h3>
-            <p id="enhance-item-name"></p>
-            <div id="enhance-materials-list"></div>
-            <button onclick="closeEnhancePopup()">閉じる</button>
+        
+        <div id="enhance-popup" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+            <div style="background: white; padding: 20px;">
+                <h3>アイテム強化</h3>
+                <p id="enhance-item-name"></p>
+                <div id="enhance-materials-list"></div>
+                <button onclick="closeEnhancePopup()">閉じる</button>
+            </div>
         </div>
-    </div>
-    
-    <div id="pet-enhance-popup" class="popup-overlay" style="display:none;">
-        <div class="popup-content">
-            <h3>ペット強化</h3>
-            <p id="pet-enhance-name"></p>
-            <div id="pet-enhance-materials-list"></div>
-            <button onclick="closePetEnhancePopup()">閉じる</button>
-        </div>
-    </div>
 
+        <div id="pet-enhance-popup" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+            <div style="background: white; padding: 20px;">
+                <h3>ペット強化</h3>
+                <p id="pet-enhance-name"></p>
+                <div id="pet-enhance-materials-list"></div>
+                <button onclick="closePetEnhancePopup()">閉じる</button>
+            </div>
+        </div>
+        
+    </main>
+    
     <script src="app.js"></script>
 </body>
 </html>
